@@ -1,0 +1,10 @@
+Dependencies:
+Python 2.7 or higher.
+Matplotlib 1.1.1rc or higher
+Numpy 1.6.1 or higher
+
+On Ubuntu: 
+apt-get install python python-numpy python-matplotlib
+
+Edit ~/.bashrc to add the following line:
+export PYTHONPATH=/full/path/to/jittr/
