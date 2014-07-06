@@ -12,3 +12,5 @@ The second milestone will be to include variations in camera distance, object po
 http://www.cs.nyu.edu/~ylclab/data/norb-v1.0/index.html
 
 Ultimately, we would like to have the renderer be fast enough to operate in "real-time", i.e. produce training imagery as fast as the neural network can process it. This distinguishes it from most renderers which put an emphasis on costly sophistications such as multi-path reflection and surface BRDF simulation. Such a renderer would put the dataset "in the loop" of training, as the neural network could then deliberately request training imagery it is having difficulty with, in order to overcome those difficulties. I believe this would be a novel and promising avenue of machine learning research.
+
+(edit)
