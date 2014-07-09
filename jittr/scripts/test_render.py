@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 from panda3d.core import loadPrcFileData
 from panda3d.core import WindowProperties
 from panda3d.core import AntialiasAttrib
@@ -30,17 +32,17 @@ def parse_args():
 
     return result
 
-"""def render(obj_file_path, width, height):
-    loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
-    #loadPrcFileData('', 'framebuffer-multisample 1 \n multisamples 2')
-    base = ShowBase()
-    #base.render.setAntialias(AntialiasAttrib.MMultisample) #
-    base.model = base.loader.loadModel(obj_file_path)
-    base.model.setPos(0,4000,0);
-    base.model.reparentTo(base.render)
-    base.graphicsEngine.renderFrame()
-    base.screenshot(namePrefix = 'render')
-    base.run()"""
+# def render(obj_file_path, width, height):
+#    loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
+#    #loadPrcFileData('', 'framebuffer-multisample 1 \n multisamples 2')
+#    base = ShowBase()
+#    #base.render.setAntialias(AntialiasAttrib.MMultisample) #
+#    base.model = base.loader.loadModel(obj_file_path)
+#    base.model.setPos(0,4000,0);
+#    base.model.reparentTo(base.render)
+#    base.graphicsEngine.renderFrame()
+#    base.screenshot(namePrefix = 'render')
+#    base.run()
 
 def renderToArray(obj_file_path, width, height):    
     loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
