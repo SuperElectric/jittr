@@ -1,5 +1,7 @@
 from panda3d.core import loadPrcFileData
 from panda3d.core import WindowProperties
+from panda3d.core import AntialiasAttrib
+from direct.showbase.ShowBase import ShowBase
 import argparse
 
 def parse_args():
@@ -27,8 +29,9 @@ def parse_args():
 
 def render(obj_file_path, width, height):
     loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
-    from direct.showbase.ShowBase import ShowBase
+    #loadPrcFileData('', 'framebuffer-multisample 1 \n multisamples 2')
     base = ShowBase()
+    #base.render.setAntialias(AntialiasAttrib.MMultisample) #
     base.model = base.loader.loadModel(obj_file_path)
     base.model.setPos(0,4000,0);
     base.model.reparentTo(base.render)
