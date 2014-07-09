@@ -57,10 +57,11 @@ def renderToArray(obj_file_path, width, height):
     j = 0
     while (i<width):
         while (j<height):
-            arrayImage[j,i,0] = image.getRed(i,j)
-            arrayImage[j,i,0] = image.getGreen(i,j)
-            arrayImage[j,i,0] = image.getBlue(i,j)
+            arrayImage[j,i,0] = image.getRed(i,j) +1
+            arrayImage[j,i,1] = image.getGreen(i,j) +1
+            arrayImage[j,i,2] = image.getBlue(i,j) +1
             j = j+1
+        j=0
         i = i+1
     return arrayImage
 
