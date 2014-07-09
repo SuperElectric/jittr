@@ -1,7 +1,5 @@
 from panda3d.core import loadPrcFileData
 from panda3d.core import WindowProperties
-from direct.showbase.ShowBase import ShowBase
-base = ShowBase()
 import argparse
 
 def parse_args():
@@ -28,11 +26,9 @@ def parse_args():
     return result
 
 def render(obj_file_path, width, height):
-    props = WindowProperties()
-    props.clearSize()
-    props.setSize(width,height)
-    base.win.requestProperties(props)
-    #window resizes, but render does not
+    loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
+    from direct.showbase.ShowBase import ShowBase
+    base = ShowBase()
     base.model = base.loader.loadModel(obj_file_path)
     base.model.setPos(0,4000,0);
     base.model.reparentTo(base.render)
