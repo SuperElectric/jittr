@@ -1,9 +1,6 @@
 #! /usr/bin/env python
 
-from panda3d.core import loadPrcFileData
-from panda3d.core import WindowProperties
-from panda3d.core import AntialiasAttrib
-from panda3d.core import PNMImage
+from panda3d.core import loadPrcFileData, WindowProperties, AntialiasAttrib, PNMImage
 from direct.showbase.ShowBase import ShowBase
 import argparse
 import numpy  # arrays and linear algebra
@@ -40,15 +37,15 @@ def renderToArray(obj_file_path, width, height):
     base.model.reparentTo(base.render)    
     base.graphicsEngine.renderFrame()
     base.taskMgr.step() # first thing I found except for run() which updates the display
-    my_display_region = base.win.getActiveDisplayRegion(0)
-    my_screenshot = my_display_region.getScreenshot()
-    my_ram_image = my_screenshot.get_uncompressed_ram_image()
-    data = my_ram_image.getData()
-    my_pixels = numpy.fromstring(data, dtype='uint8')
-    my_pixels = my_pixels.reshape((height,width,4))
-    my_pixels =  my_pixels[:, :, :3]
-    my_pixels = my_pixels[::-1,::-1,::-1] # for some reason, when this line is deleted, pyplot scales colours differently.
-    return my_pixels
+    display_region = base.win.getActiveDisplayRegion(0)
+    screenshot = display_region.getScreenshot()
+    ram_image = screenshot.get_uncompressed_ram_image()
+    data = ram_image.getData()
+    pixels = numpy.fromstring(data, dtype='uint8')
+    pixels = pixels.reshape((height,width,4))
+    pixels =  pixels[:, :, :3]
+    pixels = pixels[::-1,:,::-1] # for some reason, when this line is deleted, pyplot scales colours differently.
+    return pixels
 
 def main():
 
