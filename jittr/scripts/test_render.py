@@ -39,14 +39,16 @@ def renderToArray(obj_file_path, width, height):
     base.model.setPos(0,4000,0);
     base.model.reparentTo(base.render)    
     base.graphicsEngine.renderFrame()
-    base.taskMgr.step() # updates the display 
+    base.taskMgr.step() # first thing I found except for run() which updates the display
     my_display_region = base.win.getActiveDisplayRegion(0)
     my_screenshot = my_display_region.getScreenshot()
     my_ram_image = my_screenshot.get_uncompressed_ram_image()
     data = my_ram_image.getData()
     my_pixels = numpy.fromstring(data, dtype='uint8')
     my_pixels = my_pixels.reshape((height,width,4))
-    return my_pixels[:, :, :3]
+    my_pixels =  my_pixels[:, :, :3]
+    my_pixels = my_pixels[::-1,::-1,::-1] # for some reason, when this line is deleted, pyplot scales colours differently.
+    return my_pixels
 
 def main():
 
