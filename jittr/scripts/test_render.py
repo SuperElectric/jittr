@@ -32,18 +32,6 @@ def parse_args():
 
     return result
 
-# def render(obj_file_path, width, height):
-#    loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
-#    #loadPrcFileData('', 'framebuffer-multisample 1 \n multisamples 2')
-#    base = ShowBase()
-#    #base.render.setAntialias(AntialiasAttrib.MMultisample) #
-#    base.model = base.loader.loadModel(obj_file_path)
-#    base.model.setPos(0,4000,0);
-#    base.model.reparentTo(base.render)
-#    base.graphicsEngine.renderFrame()
-#    base.screenshot(namePrefix = 'render')
-#    base.run()
-
 def renderToArray(obj_file_path, width, height):    
     loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
     base = ShowBase()
@@ -51,21 +39,14 @@ def renderToArray(obj_file_path, width, height):
     base.model.setPos(0,4000,0);
     base.model.reparentTo(base.render)    
     base.graphicsEngine.renderFrame()
-    image = PNMImage()
-    dr = base.camNode.getDisplayRegion(0)
-    dr.getScreenshot(image)
-    arrayImage = numpy.zeros((height, width, 3))
-    i = 0
-    j = 0
-    while (i<width):
-        while (j<height):
-            arrayImage[j,i,0] = image.getRed(i,j)
-            arrayImage[j,i,1] = image.getGreen(i,j)
-            arrayImage[j,i,2] = image.getBlue(i,j)
-            j = j+1
-        j=0
-        i = i+1
-    return arrayImage
+    base.taskMgr.step() # updates the display 
+    my_display_region = base.win.getActiveDisplayRegion(0)
+    my_screenshot = my_display_region.getScreenshot()
+    my_ram_image = my_screenshot.get_uncompressed_ram_image()
+    data = my_ram_image.getData()
+    my_pixels = numpy.fromstring(data, dtype='uint8')
+    my_pixels = my_pixels.reshape((height,width,4))
+    return my_pixels[:, :, :3]
 
 def main():
 
