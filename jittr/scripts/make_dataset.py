@@ -5,6 +5,7 @@ import numpy, pylab
 from panda3d.core import loadPrcFileData, WindowProperties
 from direct.showbase.ShowBase import ShowBase
 from math import sin, cos, pi
+
 width = 300
 height = 200 # initialize width and height
 verticalOffset = 300
@@ -55,7 +56,7 @@ def parse_args():
     parser.add_argument('-o',
                         '--output',
                         nargs=2,
-                        default="../assets/images.npy ../assets/labels.npy",
+                        default=["../assets/images.npy", "../assets/labels.npy"],
                         help="The output arrays, e.g \"images.npy labels.npy\"")
 
     result = parser.parse_args()
@@ -114,6 +115,9 @@ def main():
                     #pylab.imshow(imagesArray[n,:,:,:])
                     #pylab.show()
                     n = n+1
+
+    numpy.save(args.output[0], imagesArray)
+    numpy.save(args.output[1], labelsArray)
 
 if __name__ == "__main__":
     main()
