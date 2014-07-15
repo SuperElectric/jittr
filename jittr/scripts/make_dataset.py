@@ -2,17 +2,11 @@
 
 import argparse
 import numpy, pylab
-from panda3d.core import loadPrcFileData, WindowProperties #might not be needed
+from panda3d.core import loadPrcFileData, WindowProperties
 from direct.showbase.ShowBase import ShowBase
 from math import sin, cos, pi
-
-height = 600
-width = 800
-
-loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
-base = ShowBase()
-base.mouseInterface.detachNode() # otherwise, base.taskMgr.step() overrides the camera properties
-base.models = []
+width = 300
+height = 200 # initialize width and height
 verticalOffset = 300
 scale = 2000 # distance from the camera to the origin
 elevations = [30,35,40,45,50,55,60,65,70] # list of elevation angles in degrees
@@ -31,6 +25,13 @@ for azimuth in azimuths:
         elevR = elevation*pi/180
         # each camera state is of the form [x,y,z,azimuth,elevation]
         cameraStates.append([scale*cos(elevR)*cos(azR),scale*cos(elevR)*sin(azR),scale*sin(elevR),azimuth,elevation])
+
+# window width and height can be set only once using loadPrcFileData
+def setup():
+    loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
+    base = ShowBase()
+    base.mouseInterface.detachNode() # otherwise, base.taskMgr.step() overrides the camera properties
+    base.models = []
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -79,45 +80,40 @@ def renderToArray():
 
 def main():
     args = parse_args()
+    global width    
+    width = args.width
+    global height
+    height = args.height
+    setup()
     numberOfModels = len(args.input)
     numberOfImages = numberOfModels*len(elevations)*len(azimuths)
     imagesArray = numpy.zeros([numberOfImages, height, width, 3], dtype='uint8')
     labelsArray = numpy.zeros([numberOfImages, 4], dtype='uint8') # Each image has [modelID, azimuth, elevation, lightingID]
 
     # iterate through images by model, azimuth, elevation, lighting
-    n = 0
-    i = 0
-    while (i<numberOfModels):
+    n=0
+    for i in range(numberOfModels):
         model = base.loader.loadModel(args.input[i])
         base.models.append(model)
         if (i>0):
             base.models[i-1].removeNode()        
         base.models[i].reparentTo(base.render)
         base.models[i].setPos(0,0,-verticalOffset)
-        j=0
-        while (j<numberOfAzimuths):
-            k=0
-            while (k<numberOfElevations):
+        for j in range(numberOfAzimuths):
+            for k in range(numberOfElevations):
                 c = cameraStates[n]
                 base.camera.setPos(c[0],c[1],c[2])
                 base.camera.setHpr(90+c[3],-c[4],0)
-                l=0
-                while (l<numberOfLightingPositions):
+                for l in range(numberOfLightingPositions):
                     setLighting(l)
                     labelsArray[n,0] = i # integer model ID
                     labelsArray[n,1] = j # integer azimuth ID
                     labelsArray[n,2] = k # integer elevation ID
                     labelsArray[n,3] = l # integer lighting ID
                     imagesArray[n,:,:,:] = renderToArray()
-                    
                     #pylab.imshow(imagesArray[n,:,:,:])
                     #pylab.show()
-
                     n = n+1
-                    l = l+1
-                k = k+1
-            j = j+1
-        i = i+1
 
 if __name__ == "__main__":
     main()
