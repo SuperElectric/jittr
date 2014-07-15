@@ -17,15 +17,14 @@ for i in range(18):
 numberOfAzimuths = len(azimuths)
 numberOfElevations = len(elevations)
 numberOfLightingPositions = 1
-cameraStates = []
+cameraPositions = numpy.zeros((numberOfAzimuths,numberOfElevations,3))
 
-# generate a list of camera states
-for azimuth in azimuths:
-    azR = azimuth*pi/180
-    for elevation in elevations:
-        elevR = elevation*pi/180
-        # each camera state is of the form [x,y,z,azimuth,elevation]
-        cameraStates.append([scale*cos(elevR)*cos(azR),scale*cos(elevR)*sin(azR),scale*sin(elevR),azimuth,elevation])
+# generate an array of camera positions ordered by azimuth and elevation IDs
+for i in range(len(azimuths)):
+    azR = azimuths[i]*pi/180
+    for j in range(len(elevations)):
+        elevR = elevations[j]*pi/180
+        cameraPositions[i,j,:] = numpy.array([scale*cos(elevR)*cos(azR),scale*cos(elevR)*sin(azR),scale*sin(elevR)])
 
 # window width and height can be set only once using loadPrcFileData
 def setup():
@@ -66,6 +65,12 @@ def parse_args():
 def setLighting(lightingID):
     pass
 
+def setCameraState(azID, elevID):
+    base.camera.setPos(cameraPositions[azID,elevID,0],
+                       cameraPositions[azID,elevID,1],
+                       cameraPositions[azID,elevID,2])
+    base.camera.setHpr(90+azimuths[azID],-elevations[elevID],0)
+
 def renderToArray():
     base.graphicsEngine.renderFrame()
     base.taskMgr.step()
@@ -102,9 +107,7 @@ def main():
         base.models[i].setPos(0,0,-verticalOffset)
         for j in range(numberOfAzimuths):
             for k in range(numberOfElevations):
-                c = cameraStates[n]
-                base.camera.setPos(c[0],c[1],c[2])
-                base.camera.setHpr(90+c[3],-c[4],0)
+                setCameraState(j,k)
                 for l in range(numberOfLightingPositions):
                     setLighting(l)
                     labelsArray[n,0] = i # integer model ID
@@ -112,8 +115,6 @@ def main():
                     labelsArray[n,2] = k # integer elevation ID
                     labelsArray[n,3] = l # integer lighting ID
                     imagesArray[n,:,:,:] = renderToArray()
-                    #pylab.imshow(imagesArray[n,:,:,:])
-                    #pylab.show()
                     n = n+1
 
     numpy.save(args.output[0], imagesArray)
