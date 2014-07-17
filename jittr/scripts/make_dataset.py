@@ -2,14 +2,15 @@
 
 import argparse
 import numpy, pylab
-from panda3d.core import loadPrcFileData, WindowProperties
+from panda3d.core import loadPrcFileData, WindowProperties, Material, VBase4, PointLight
 from direct.showbase.ShowBase import ShowBase
 from math import sin, cos, pi
 
 width = 300
 height = 200 # initialize width and height
-verticalOffset = 300
-scale = 2000 # distance from the camera to the origin
+verticalOffset = 0
+cameraFocalLength = 1 # relative to sensor width.
+scale = 10 # distance from the camera to the origin
 elevations = [30,35,40,45,50,55,60,65,70] # list of elevation angles in degrees
 azimuths = [] # list of azimuth angles in degrees
 for i in range(18):
@@ -32,6 +33,9 @@ def setup():
     base = ShowBase()
     base.mouseInterface.detachNode() # otherwise, base.taskMgr.step() overrides the camera properties
     base.models = []
+    base.plight = PointLight('plight')
+    base.plnp = base.render.attachNewNode(base.plight)
+    base.camLens.setFocalLength(1)
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -63,7 +67,10 @@ def parse_args():
 
 # this function will set lighting position to the one denoted by "lightingID"
 def setLighting(lightingID):
-    pass
+    if (lightingID == 0):
+        base.plight.setColor(VBase4(1, 1, 1, 1))
+        base.plnp.setPos(0, 0, 10)
+        base.render.setLight(base.plnp)
 
 def setCameraState(azID, elevID):
     base.camera.setPos(cameraPositions[azID,elevID,0],
@@ -91,6 +98,7 @@ def main():
     global height
     height = args.height
     setup()
+
     numberOfModels = len(args.input)
     numberOfImages = numberOfModels*len(elevations)*len(azimuths)
     imagesArray = numpy.zeros([numberOfImages, height, width, 3], dtype='uint8')
