@@ -1,0 +1,7 @@
+#Created by NextEngine Inc. Copyright 2006
+# vertex count = 1
+v 0.000000 0.000000 0.000000
+vt -1.000000 -1.000000
+mtllib tree.mtl
+g tree
+# triangle count = 0
