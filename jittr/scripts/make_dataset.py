@@ -4,7 +4,6 @@ import argparse, numpy, pylab, imp
 from panda3d.core import loadPrcFileData, WindowProperties, Material, VBase4, PointLight
 from direct.showbase.ShowBase import ShowBase
 from math import sin, cos, pi
-import render_settings as settings
 
 class Settings:
     width = 0
@@ -129,9 +128,11 @@ def main():
     base.camLens.setFocalLength(cameraFocalLength)
 
 
-    # this function will set lighting position to the one denoted by "lightingID"
+    # The lightingID is mapped to a name, say "noLights" by the render_settings.txt file.
+    # This function determines how "noLights" is rendered by panda
     def setLighting(lightingID):
-        if lightingPositions[lightingID] == "noLights":            
+#        if lightingPositions[lightingID] == "noLights":          
+        if True:
             base.plight.setColor(VBase4(1, 1, 1, 1))
             base.plnp.setPos(0, 0, 10)
             base.render.setLight(base.plnp)
