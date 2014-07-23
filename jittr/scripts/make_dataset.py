@@ -5,48 +5,57 @@ from panda3d.core import loadPrcFileData, WindowProperties, Material, VBase4, Po
 from direct.showbase.ShowBase import ShowBase
 from math import sin, cos, pi
 
-def parse_settings(args):
+def parseSettings(args):
     filePath = args.settings
     doc = yaml.load(open(filePath))
     class namespace(object):
         pass
     result = namespace()
     
-    if args.width > 0 :
+    if 'width' in doc and args.width > 0 :
         result.width = args.width
-        print('Width specified. Ignoring width value in "' + filePath + '"')
-    elif 'width' in doc:
+        print('Width specified. Ignoring width value in "%s"' % filePath)
+    elif 'width' in doc :          
         result.width = doc['width']
-        print('Width not specified. Using width value in "' + filePath + '"')
+        print('Width not specified. Using width value in "%s"' % filePath)
+    elif args.width > 0 :
+        result.width = args.width
     else:
-        sys.exit('Width not specified in arguments or in "' + filePath + '"')
-        
-    if args.height > 0 :
+        sys.exit('Width not specified in arguments or in "%s"' % filePath)
+    
+    if 'height' in doc and args.height > 0 :
         result.height = args.height
-        print('Height specified. Ignoring height value in "' + filePath + '"')
-    elif 'height' in doc:
+        print('height specified. Ignoring height value in "%s"' % filePath)
+    elif 'height' in doc :          
         result.height = doc['height']
-        print('Height not specified. Using height value in "' + filePath + '"')
+        print('height not specified. Using height value in "%s"' % filePath)
+    elif args.height > 0 :
+        result.height = args.height
     else:
-        sys.exit('Height not specified in arguments or in "' + filePath + '"')
+        sys.exit('height not specified in arguments or in "%s"' % filePath)
         
-    if args.models != [] :
+        
+    if 'models' in doc and args.models != [] :
         result.models = args.models
-        print('Models specified. Ignoring models in "' + filePath + '"')
+        print('Models specified. Ignoring models in "%s"' % filePath)
     elif 'models' in doc:
         result.models = doc['models']
-        print('Models not specified. Using models in "' + filePath + '"')
+        print('Models not specified. Using models in "%s"' % filePath)
+    elif args.models == []:
+        result.models = doc['models']
     else:
-        sys.exit('No models specified in arguments or in "' + filePath + '"')
+        sys.exit('No models specified in arguments or in "%s"' % filePath)
 
-    if args.output != ['fromFile','fromFile'] :
+    if 'output' in doc and args.output != [] :
         result.output = args.output
-        print('Output files specified. Ignoring output specified in "' + filePath + '"')
+        print('Output files specified. Ignoring output specified in "%s"' % filePath)
     elif 'width' in doc:
         result.output = doc['width']
-        print('Output files not specified. Using output specified in "' + filePath + '"')
+        print('Output files not specified. Using output specified in "%s"' % filePath)
+    elif args.output == [] :
+        result.output = doc['output']
     else:
-        sys.exit('No output files specified in arguments or in "' + filePath + '"')
+        sys.exit('No output files specified in arguments or in "%s"' % filePath)
         
     
 
@@ -69,7 +78,7 @@ def parse_settings(args):
     return result
     
 
-def parse_args():
+def parseArgs():
     parser = argparse.ArgumentParser(
         description="Generates norb data set of N .egg models and saves renders as .npy arrays")
 
@@ -93,7 +102,7 @@ def parse_args():
     parser.add_argument('-o',
                         '--output',
                         nargs=2,
-                        default=["fromFile", "fromFile"],
+                        default = [],
                         help="The output arrays, e.g \"images.npy labels.npy\"")
     
     parser.add_argument('--settings',
@@ -104,8 +113,8 @@ def parse_args():
 
 def main():
 
-    args = parse_args()
-    settings = parse_settings(args)
+    args = parseArgs()
+    settings = parseSettings(args)
 
     def getCameraPositions():
         cameraPositions = numpy.zeros((len(settings.azimuths),len(settings.elevations),3))
@@ -127,7 +136,7 @@ def main():
     imagesArray = numpy.zeros([numberOfImages, settings.height, settings.width, 3], dtype='uint8')
     labelsArray = numpy.zeros([numberOfImages, 4], dtype='uint8') # Each image has [modelID, azimuth, elevation, lightingID]
 
-    loadPrcFileData('', 'win-size ' + str(settings.width) + ' ' + str(settings.height) )
+    loadPrcFileData('', 'win-size %d %s' % (settings.width, settings.height))
     base = ShowBase()
     base.mouseInterface.detachNode() # otherwise, base.taskMgr.step() overrides the camera properties
     base.models = []
@@ -136,7 +145,7 @@ def main():
     base.camLens.setFocalLength(settings.cameraFocalLength)
 
 
-    # The lightingID is mapped to a name, say "noLights" by the render_settings.txt file.
+    # The lightingID is mapped to a name, say "noLights" by the render_settings.yml file.
     # This function determines how "noLights" is rendered by panda
     def setLighting(lightingID):
         if settings.lightingPositions[lightingID] == "noLights":
@@ -187,7 +196,7 @@ def main():
                     imagesArray[n,:,:,:] = renderToArray()
                     n = n+1
 
-    if  settings.dontSave == False :    
+    if not settings.dontSave:    
         numpy.save(settings.output[0], imagesArray)
         numpy.save(settings.output[1], labelsArray)
 
