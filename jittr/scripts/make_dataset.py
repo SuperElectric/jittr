@@ -1,7 +1,14 @@
 #! /usr/bin/env python
 
-import argparse, numpy, yaml, sys
-from panda3d.core import loadPrcFileData, WindowProperties, Material, VBase4, PointLight
+import argparse
+import numpy
+import yaml
+import sys
+from panda3d.core import (loadPrcFileData,
+                          WindowProperties,
+                          Material,
+                          VBase4,
+                          PointLight)
 from direct.showbase.ShowBase import ShowBase
 from math import sin, cos, pi
 
@@ -52,24 +59,30 @@ def parseSettings(args):
     elif args.output != []:
         doc['output'] = args.output
     else:
-        sys.exit('No output files specified in arguments or in "%s"' % filePath)
+        sys.exit('No output files specified in arguments or in "%s"'
+                 % filePath)
 
     result.__dict__.update(doc)
 
-    # Could create a "Model" class and for each model, say "cube", in result.models, create a new Model object called "cube" which contains all data from the "cube.settings" file.
-    # But for now file "model.settings" is simply read (assumed to be in ../assets/) and result.model3DFiles is created.
+    # Could create a "Model" class and for each model, say "cube", in
+    # result.models, create a new Model object called "cube" which contains all
+    # data from the "cube.settings" file. But for now file "model.settings" is
+    # simply read (assumed to be in ../assets/) and result.model3DFiles is
+    # created.
+
     result.model3dFiles = []
     for model in result.models:
         modelSettingsFile = open('../assets/' + model + '.settings.yml', 'r')
         modelSettingsDictionary = yaml.load(modelSettingsFile)
-        model3dFile = modelSettingsDictionary['model3dFile'] 
+        model3dFile = modelSettingsDictionary['model3dFile']
         result.model3dFiles.append(model3dFile)
     return result
 
 
 def parseArgs():
     parser = argparse.ArgumentParser(
-        description="Generates norb data set of N .egg models and saves renders as .npy arrays")
+        description='''Generates norb data set of N .egg models and saves renders
+        as .npy arrays''')
 
     parser.add_argument('--width',
                         type=int,
@@ -85,13 +98,16 @@ def parseArgs():
                         '--models',
                         nargs='+',
                         default=[],
-                        help='Names of models to render. Example: "--models cube" will use data specified in ./cube.settings if it exists')
+                        help='''Names of models to render. Example: "--models cube
+                        will use data specified in ./cube.settings if it exists
+                        ''')
 
     parser.add_argument('-o',
                         '--output',
                         nargs=2,
                         default=[],
-                        help="The output arrays, e.g \"images.npy labels.npy\"")
+                        help="The output arrays, e.g \"images.npy labels.npy\""
+                        )
 
     parser.add_argument('--settings',
                         default="../render_settings.yml",
@@ -106,34 +122,45 @@ def main():
     settings = parseSettings(args)
 
     def getCameraPositions():
-        cameraPositions = numpy.zeros((len(settings.azimuths), len(settings.elevations), 3))
+        cameraPositions = numpy.zeros((len(settings.azimuths),
+                                       len(settings.elevations), 3))
 
         for i in range(len(settings.azimuths)):
             azR = settings.azimuths[i] * pi / 180
             for azimuthID in range(len(settings.elevations)):
                 elevR = settings.elevations[azimuthID] * pi / 180
                 scale = settings.scale
-                cameraPositions[i, azimuthID, :] = numpy.array([scale * cos(elevR) * cos(azR), scale * cos(elevR) * sin(azR), scale * sin(elevR)])
+                cameraPositions[i, azimuthID, :] = \
+                    numpy.array([scale * cos(elevR) * cos(azR),
+                                 scale * cos(elevR) * sin(azR),
+                                 scale * sin(elevR)])
 
         return cameraPositions
 
     cameraPositions = getCameraPositions()
 
-    # generate an array of camera positions ordered by azimuth and elevation IDs
+    # generate an array of camera positions ordered by azimuth and elevation
+    # IDs
 
-    numberOfImages = len(settings.models) * len(settings.elevations) * len(settings.azimuths)
-    imagesArray = numpy.zeros([numberOfImages, settings.height, settings.width, 3], dtype='uint8')
-    labelsArray = numpy.zeros([numberOfImages, 4], dtype='uint8')  # Each image has [modelID, azimuth, elevation, lightingID]
+    numberOfImages = len(settings.models) * len(settings.elevations) * \
+        len(settings.azimuths)
+    imagesArray = numpy.zeros([numberOfImages,
+                               settings.height,
+                               settings.width, 3], dtype='uint8')
+    labelsArray = numpy.zeros([numberOfImages, 4], dtype='uint8')
+    # Each image has [modelID, azimuth, elevation, lightingID]
 
     loadPrcFileData('', 'win-size %d %s' % (settings.width, settings.height))
     base = ShowBase()
-    base.mouseInterface.detachNode()  # otherwise, base.taskMgr.step() overrides the camera properties
+    base.mouseInterface.detachNode()  # Otherwise, base.taskMgr.step()
+    # overrides the camera properties
     base.models = []
     base.plight = PointLight('plight')
     base.plnp = base.render.attachNewNode(base.plight)
     base.camLens.setFocalLength(settings.cameraFocalLength)
 
-    # The lightingID is mapped to a name, say "noLights" by the render_settings.yml file.
+    # The lightingID is mapped to a name, say "noLights" by the
+    # render_settings.yml file.
     # This function determines how "noLights" is rendered by panda
     def setLighting(lightingID):
         if settings.lightingPositions[lightingID] == "noLights":
@@ -145,7 +172,9 @@ def main():
         base.camera.setPos(cameraPositions[azID, elevID, 0],
                            cameraPositions[azID, elevID, 1],
                            cameraPositions[azID, elevID, 2])
-        base.camera.setHpr(90 + settings.azimuths[azID], -settings.elevations[elevID], 0)
+        base.camera.setHpr(90 + settings.azimuths[azID],
+                           -settings.elevations[elevID],
+                           0)
 
     def renderToArray():
         base.graphicsEngine.renderFrame()
@@ -190,5 +219,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
