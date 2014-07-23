@@ -1,53 +1,73 @@
 #! /usr/bin/env python
 
-import argparse, numpy, pylab, imp
+import argparse, numpy, yaml, sys
 from panda3d.core import loadPrcFileData, WindowProperties, Material, VBase4, PointLight
 from direct.showbase.ShowBase import ShowBase
 from math import sin, cos, pi
 
-class Settings:
-    width = 0
-    height = 0
-    models = []
-    output = []
-    dontSave = False
-    verticalOffset = 0
-    cameraFocalLength = 1
-    scale = 1
-    elevations = []
-    azimuths = []
-    lightingPositions = []
-    def __init__ (self,filePath):
-        textFile = open(filePath)
-        lines = textFile.readlines()
-        for line in lines:
-            line = line.replace(' ','')
-            line = line.rstrip()
-            words = line.split(':')
-            if len(words) == 2 :
-                if words[0] == 'width' : self.width = int(words[1])
-                elif words[0] == 'height' : self.height = int(words[1])
-                elif words[0] == 'models' : self.models = words[1].split(',')
-                elif words[0] == 'output' : self.output = words[1].split(',')
-                elif words[0] == 'dontSave' :
-                    if words[1] == 'True' :
-                        self.dontSave = True
-                    elif words[1] == 'False' :
-                        self.dontSave = False
-                elif words[0] == 'verticalOffset' : self.verticalOffset = float(words[1])
-                elif words[0] == 'cameraFocalLength' : self.cameraFocalLength = float(words[1])
-                elif words[0] == 'scale' : self.scale = float(words[1])
-                elif words[0] == 'elevations' :
-                    self.elevations = []
-                    values = words[1].split(',')
-                    for value in values:
-                        self.elevations.append(float(value))
-                elif words[0] == 'azimuths' :
-                    self.azimuths = []
-                    values = words[1].split(',')
-                    for value in values:
-                        self.azimuths.append(float(value))
-                elif words[0] == 'lightingPositions' : self.lightingPositions = words[1].split(',')
+def parse_settings(args):
+    filePath = args.settings
+    doc = yaml.load(open(filePath))
+    class namespace(object):
+        pass
+    result = namespace()
+    
+    if args.width > 0 :
+        result.width = args.width
+        print('Width specified. Ignoring width value in "' + filePath + '"')
+    elif 'width' in doc:
+        result.width = doc['width']
+        print('Width not specified. Using width value in "' + filePath + '"')
+    else:
+        sys.exit('Width not specified in arguments or in "' + filePath + '"')
+        
+    if args.height > 0 :
+        result.height = args.height
+        print('Height specified. Ignoring height value in "' + filePath + '"')
+    elif 'height' in doc:
+        result.height = doc['height']
+        print('Height not specified. Using height value in "' + filePath + '"')
+    else:
+        sys.exit('Height not specified in arguments or in "' + filePath + '"')
+        
+    if args.models != [] :
+        result.models = args.models
+        print('Models specified. Ignoring models in "' + filePath + '"')
+    elif 'models' in doc:
+        result.models = doc['models']
+        print('Models not specified. Using models in "' + filePath + '"')
+    else:
+        sys.exit('No models specified in arguments or in "' + filePath + '"')
+
+    if args.output != ['fromFile','fromFile'] :
+        result.output = args.output
+        print('Output files specified. Ignoring output specified in "' + filePath + '"')
+    elif 'width' in doc:
+        result.output = doc['width']
+        print('Output files not specified. Using output specified in "' + filePath + '"')
+    else:
+        sys.exit('No output files specified in arguments or in "' + filePath + '"')
+        
+    
+
+    result.dontSave = doc['dontSave']
+    result.verticalOffset = doc['verticalOffset']
+    result.cameraFocalLength = doc['cameraFocalLength']
+    result.scale = doc['scale']
+    result.elevations = doc['elevations']
+    result.azimuths = doc['azimuths']
+    result.lightingPositions = doc['lightingPositions']
+    
+    # Could create a "Model" class and for each model, say "cube", in result.models, create a new Model object called "cube" which contains all data from the "cube.settings" file.
+    # But for now file "model.settings" is simply read (assumed to be in ../assets/) and result.model3DFiles is created.
+    result.model3dFiles = []
+    for model in result.models:
+        modelSettingsFile = open('../assets/' + model + '.settings.yml', 'r')
+        modelSettingsDictionary = yaml.load(modelSettingsFile)
+        model3dFile = modelSettingsDictionary['model3dFile'] 
+        result.model3dFiles.append(model3dFile)
+    return result
+    
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -63,21 +83,21 @@ def parse_args():
                         default=0,
                         help="The height of the output images")
 
-    parser.add_argument('-i',
-                        '--input',
+    parser.add_argument('-m',
+                        '--models',
                         nargs='+',
                         default = [],
-                        help="The .egg files to render")
+                        help='Names of models to render. Example: "--models cube" will use data specified in ./cube.settings if it exists')
+    
 
     parser.add_argument('-o',
                         '--output',
                         nargs=2,
                         default=["fromFile", "fromFile"],
                         help="The output arrays, e.g \"images.npy labels.npy\"")
-    result = parser.parse_args()
     
     parser.add_argument('--settings',
-                        default="../render_settings.txt",
+                        default="../render_settings.yml",
                         help="The render settings file")
     result = parser.parse_args()
     return result
@@ -85,54 +105,41 @@ def parse_args():
 def main():
 
     args = parse_args()
-    settings = Settings(args.settings)
-    if args.width < 1 : width = settings.width
-    else : width = args.width
-    if args.height < 1 : height = settings.height
-    else : height = args.height
-    if args.input == [] : models = settings.models
-    else :  models = args.input
-    if args.output == ["fromFile", "fromFile"] : output = settings.output
-    else: output = args.output
-        
-    dontSave = settings.dontSave
-    verticalOffset = settings.verticalOffset
-    cameraFocalLength = settings.cameraFocalLength
-    scale = settings.scale
-    elevations = settings.elevations
-    azimuths = settings.azimuths
-    lightingPositions = settings.lightingPositions
-    numberOfAzimuths = len(azimuths)
-    numberOfElevations = len(elevations)
-    numberOfLightingPositions = len (lightingPositions)
-    cameraPositions = numpy.zeros((numberOfAzimuths,numberOfElevations,3))
+    settings = parse_settings(args)
+
+    def getCameraPositions():
+        cameraPositions = numpy.zeros((len(settings.azimuths),len(settings.elevations),3))
+
+        for i in range(len(settings.azimuths)):
+            azR = settings.azimuths[i]*pi/180
+            for azimuthID in range(len(settings.elevations)):
+                elevR = settings.elevations[azimuthID]*pi/180
+                scale = settings.scale
+                cameraPositions[i,azimuthID,:] = numpy.array([scale*cos(elevR)*cos(azR),scale*cos(elevR)*sin(azR),scale*sin(elevR)])
+
+        return cameraPositions
+
+    cameraPositions = getCameraPositions()
 
     # generate an array of camera positions ordered by azimuth and elevation IDs
-    for i in range(len(azimuths)):
-        azR = azimuths[i]*pi/180
-        for j in range(len(elevations)):
-            elevR = elevations[j]*pi/180
-            cameraPositions[i,j,:] = numpy.array([scale*cos(elevR)*cos(azR),scale*cos(elevR)*sin(azR),scale*sin(elevR)])
     
-    numberOfModels = len(models)
-    numberOfImages = numberOfModels*len(elevations)*len(azimuths)
-    imagesArray = numpy.zeros([numberOfImages, height, width, 3], dtype='uint8')
+    numberOfImages = len(settings.models)*len(settings.elevations)*len(settings.azimuths)
+    imagesArray = numpy.zeros([numberOfImages, settings.height, settings.width, 3], dtype='uint8')
     labelsArray = numpy.zeros([numberOfImages, 4], dtype='uint8') # Each image has [modelID, azimuth, elevation, lightingID]
 
-    loadPrcFileData('', 'win-size ' + str(width) + ' ' + str(height) )
+    loadPrcFileData('', 'win-size ' + str(settings.width) + ' ' + str(settings.height) )
     base = ShowBase()
     base.mouseInterface.detachNode() # otherwise, base.taskMgr.step() overrides the camera properties
     base.models = []
     base.plight = PointLight('plight')
     base.plnp = base.render.attachNewNode(base.plight)
-    base.camLens.setFocalLength(cameraFocalLength)
+    base.camLens.setFocalLength(settings.cameraFocalLength)
 
 
     # The lightingID is mapped to a name, say "noLights" by the render_settings.txt file.
     # This function determines how "noLights" is rendered by panda
     def setLighting(lightingID):
-#        if lightingPositions[lightingID] == "noLights":          
-        if True:
+        if settings.lightingPositions[lightingID] == "noLights":
             base.plight.setColor(VBase4(1, 1, 1, 1))
             base.plnp.setPos(0, 0, 10)
             base.render.setLight(base.plnp)
@@ -141,7 +148,7 @@ def main():
         base.camera.setPos(cameraPositions[azID,elevID,0],
                            cameraPositions[azID,elevID,1],
                            cameraPositions[azID,elevID,2])
-        base.camera.setHpr(90+azimuths[azID],-elevations[elevID],0)
+        base.camera.setHpr(90+settings.azimuths[azID],-settings.elevations[elevID],0)
     
     def renderToArray():
         base.graphicsEngine.renderFrame()
@@ -151,35 +158,38 @@ def main():
         ram_image = screenshot.get_uncompressed_ram_image()
         data = ram_image.getData()
         pixels = numpy.fromstring(data, dtype='uint8')
-        pixels = pixels.reshape((height,width,4))
+        pixels = pixels.reshape((settings.height,settings.width,4))
         pixels =  pixels[:, :, :3]
         pixels = pixels[::-1,:,::-1]
         return pixels
 
+    # load all models before rendering
+    for modelID in range(len(settings.models)):
+        model = base.loader.loadModel(settings.model3dFiles[modelID])
+        base.models.append(model)
+
     # iterate through images by model, azimuth, elevation, lighting
     n=0
-    for i in range(numberOfModels):
-        model = base.loader.loadModel(models[i])
-        base.models.append(model)
-        if (i>0):
-            base.models[i-1].removeNode()        
-        base.models[i].reparentTo(base.render)
-        base.models[i].setPos(0,0,-verticalOffset)
-        for j in range(numberOfAzimuths):
-            for k in range(numberOfElevations):
-                setCameraState(j,k)
-                for l in range(numberOfLightingPositions):
-                    setLighting(l)
-                    labelsArray[n,0] = i # integer model ID
-                    labelsArray[n,1] = j # integer azimuth ID
-                    labelsArray[n,2] = k # integer elevation ID
-                    labelsArray[n,3] = l # integer lighting ID
+    for modelID in range(len(settings.models)):
+        if (modelID>0):
+            base.models[modelID-1].removeNode()        
+        base.models[modelID].reparentTo(base.render)
+        base.models[modelID].setPos(0,0,-settings.verticalOffset)
+        for azimuthID in range(len(settings.azimuths)):
+            for elevationID in range(len(settings.elevations)):
+                setCameraState(azimuthID,elevationID)
+                for lightingID in range(len(settings.lightingPositions)):
+                    setLighting(lightingID)
+                    labelsArray[n,0] = modelID
+                    labelsArray[n,1] = azimuthID
+                    labelsArray[n,2] = elevationID
+                    labelsArray[n,3] = lightingID
                     imagesArray[n,:,:,:] = renderToArray()
                     n = n+1
 
-    if  dontSave == False :    
-        numpy.save(output[0], imagesArray)
-        numpy.save(output[1], labelsArray)
+    if  settings.dontSave == False :    
+        numpy.save(settings.output[0], imagesArray)
+        numpy.save(settings.output[1], labelsArray)
 
 if __name__ == "__main__":
     main()
