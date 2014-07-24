@@ -72,7 +72,7 @@ def parseSettings(args):
 
     result.model3dFiles = []
     for model in result.models:
-        modelSettingsFile = open('../assets/' + model + '.settings.yml', 'r')
+        modelSettingsFile = open('../assets/models/' + model + '/' + model + '.settings.yml', 'r')
         modelSettingsDictionary = yaml.load(modelSettingsFile)
         model3dFile = modelSettingsDictionary['model3dFile']
         result.model3dFiles.append(model3dFile)
