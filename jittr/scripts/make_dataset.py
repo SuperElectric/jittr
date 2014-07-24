@@ -5,8 +5,6 @@ import numpy
 import yaml
 import sys
 from panda3d.core import (loadPrcFileData,
-                          WindowProperties,
-                          Material,
                           VBase4,
                           PointLight)
 from direct.showbase.ShowBase import ShowBase
