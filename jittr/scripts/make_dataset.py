@@ -148,7 +148,7 @@ def main():
     labelsArray = numpy.zeros([numberOfImages, 4], dtype='uint8')
     # Each image has [modelID, azimuth, elevation, lightingID]
 
-    loadPrcFileData('', 'win-size %d %s' % (settings.width, settings.height))
+    loadPrcFileData('', 'win-size %d %d' % (settings.width, settings.height))
     base = ShowBase()
     base.mouseInterface.detachNode()  # Otherwise, base.taskMgr.step()
     # overrides the camera properties
