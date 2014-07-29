@@ -1,18 +1,22 @@
+#! /usr/bin/env python
+
 import argparse
 
 
 def parseArgs():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input',
-                        default='tree',
-                        help='name of model to convert. e.g, for tree.obj '
-                        'write \"--input tree\"')
+    parser.add_argument('input',
+                        help='.obj file to convert')
+    parser.add_argument('output', help='new .obj file')
+
     result = parser.parse_args()
+    result.name = result.input.rstrip('.obj')
+    result.newName = result.output.rstrip('.obj')
     return result
 
 args = parseArgs()
-obj = open('%s.obj' % args.input)
-mtl = open('%s.mtl' % args.input)
+obj = open('%s.obj' % args.name)
+mtl = open('%s.mtl' % args.name)
 objLines = obj.readlines()
 mtlLines = mtl.readlines()
 
@@ -71,12 +75,12 @@ for line in objLines:
 
 
 # write new .mtl file:
-newMtl = open('%s2.mtl' % args.input, 'w')
-newMtlLines = ['newmtl %s\n' % args.input, 'map_Kd %s.jpg\n' % args.input]
+newMtl = open('%s.mtl' % args.newName, 'w')
+newMtlLines = ['newmtl material\n', 'map_Kd %s.jpg\n' % args.newName]
 newMtl.writelines(newMtlLines)
 
 # write new .obj file:
-newObj = open('%s2.obj' % args.input, 'w')
+newObj = open('%s.obj' % args.newName, 'w')
 newObjLines = []
 uvID = 0
 for line in objLines:
@@ -87,9 +91,9 @@ for line in objLines:
         newObjLines.append('vt %f %f\n' % newUvList[uvID])
         uvID = uvID + 1
     elif words[0] == 'usemtl':
-        newObjLines.append('usemtl %s\n' % args.input)
+        newObjLines.append('usemtl material\n')
     elif words[0] == 'mtllib':
-        newObjLines.append('mtllib %s2.mtl' % args.input)
+        newObjLines.append('mtllib %s.mtl\n' % args.newName)
     else:
         newObjLines.append(line)
 newObj.writelines(newObjLines)
