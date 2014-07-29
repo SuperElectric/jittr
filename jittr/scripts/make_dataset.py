@@ -70,7 +70,7 @@ def parseSettings(args):
 
     result.model3dFiles = []
     for model in result.models:
-        modelSettingsFile = open('../assets/models/' + model + '/' + model + '.settings.yml', 'r')
+        modelSettingsFile = open('../assets/models/%s/%s.settings.yml' % (model,model), 'r')
         modelSettingsDictionary = yaml.load(modelSettingsFile)
         model3dFile = modelSettingsDictionary['model3dFile']
         result.model3dFiles.append(model3dFile)
@@ -79,8 +79,8 @@ def parseSettings(args):
 
 def parseArgs():
     parser = argparse.ArgumentParser(
-        description='''Generates norb data set of N .egg models and saves renders
-        as .npy arrays''')
+        description='Generates norb data set of N .egg models and saves renders'
+        ' as .npy arrays')
 
     parser.add_argument('--width',
                         type=int,
@@ -96,9 +96,8 @@ def parseArgs():
                         '--models',
                         nargs='+',
                         default=[],
-                        help='''Names of models to render. Example: "--models cube
-                        will use data specified in ./cube.settings if it exists
-                        ''')
+                        help='Names of models to render. Example: "--models cube'
+                        ' will use data specified in ./cube.settings if it exists')
 
     parser.add_argument('-o',
                         '--output',
