@@ -4,11 +4,16 @@ import argparse
 import numpy
 import yaml
 import sys
-from panda3d.core import (loadPrcFileData,
-                          VBase4,
-                          PointLight)
-from direct.showbase.ShowBase import ShowBase
-from math import sin, cos, pi
+try:
+    import bpy
+    usingBlender = True
+except ImportError:
+    from panda3d.core import (loadPrcFileData,
+                              VBase4,
+                              PointLight)
+    from direct.showbase.ShowBase import ShowBase
+    from math import sin, cos, pi
+    usingBlender = False
 
 
 def parseSettings(args):
@@ -70,7 +75,8 @@ def parseSettings(args):
 
     result.model3dFiles = []
     for model in result.models:
-        modelSettingsFile = open('../assets/models/%s/%s.settings.yml' % (model,model), 'r')
+        modelSettingsFile = open('../assets/models/%s/%s.settings.yml' %
+                                 (model, model), 'r')
         modelSettingsDictionary = yaml.load(modelSettingsFile)
         model3dFile = modelSettingsDictionary['model3dFile']
         result.model3dFiles.append(model3dFile)
@@ -79,8 +85,8 @@ def parseSettings(args):
 
 def parseArgs():
     parser = argparse.ArgumentParser(
-        description='Generates norb data set of N .egg models and saves renders'
-        ' as .npy arrays')
+        description='Generates norb data set of N .egg models and saves '
+        'renders as .npy arrays')
 
     parser.add_argument('--width',
                         type=int,
@@ -96,8 +102,9 @@ def parseArgs():
                         '--models',
                         nargs='+',
                         default=[],
-                        help='Names of models to render. Example: "--models cube'
-                        ' will use data specified in ./cube.settings if it exists')
+                        help='Names of models to render. Example: "--models '
+                        'cube will use data specified in ./cube.settings if it'
+                        ' exists')
 
     parser.add_argument('-o',
                         '--output',
