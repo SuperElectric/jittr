@@ -122,11 +122,11 @@ def main():
             total = total + (newuv[0]-olduv[0])**2 + (newuv[1]-olduv[1])**2
         return total
 
-    def estimateProjectMatrix(n, epsilon):
+    def estimateProjectMatrix(n, epsilon, material):
         total = numpy.zeros((12))
         i = 0
         while (i < n):
-            vertices = sampleVerticies(6, materials[0])
+            vertices = sampleVerticies(6, material)
             matrix = linearEqnConsts(vertices)
             collum = numpy.zeros((12))
             for j in range(12):
@@ -154,14 +154,18 @@ def main():
         uv = numpy.array([0.5 + tempUv[0]/ScaleU, 0.5 + tempUv[1]/ScaleV])
         return uv
 
-    def sumOferrors(matrix13, vertexSet, omittedIndex):
+    def sumOferrors(matrix, vertexSet, omittedIndex):
         total = 0
-        projectMatrix = numpy.concatenate((matrix13[:omittedIndex],
+        projectMatrix = numpy.concatenate((matrix[:omittedIndex],
                                            [1],
-                                           matrix13[omittedIndex:]))
+                                           matrix[omittedIndex:]))
         projectMatrix = numpy.reshape(projectMatrix[:12], (3, 4))
-        K1 = matrix13[11]
-        K2 = matrix13[12]
+        if len(matrix) == 13:
+            K1 = matrix[11]
+            K2 = matrix[12]
+        else:
+            K1 = 0
+            K2 = 0
         for vertex in vertexSet:
             xyz = numpy.array(vertex[2:])
             uv = numpy.array(vertex[:2])
@@ -170,41 +174,47 @@ def main():
             total = total + error
         return total/len(vertexSet)
 
-    estimateMatrix = estimateProjectMatrix(100, 0.0000001)
-    omittedIndex = numpy.argmax(estimateMatrix)
-    estimateMatrix = estimateMatrix/estimateMatrix[omittedIndex]
-    estimate11Matrix = numpy.delete(estimateMatrix, omittedIndex)
-    estimate13Matrix = numpy.append(estimate11Matrix, [0, 0])
-
-    def solve(estimate13Matrix):
-        vertexSet = sampleVerticies(100, materials[0])
+    def solve(matrix, useDistortion, material):
+        if not useDistortion:
+            matrix = matrix[:11]
+        vertexSet = sampleVerticies(100, material)
         result = minimize(sumOferrors,
-                          estimate13Matrix,
+                          matrix,
                           args=(vertexSet, omittedIndex),
                           method='Nelder-Mead',
                           options={'maxiter': 1000, 'disp': False})
         return result
 
-    result = solve(estimate13Matrix)
+    material = materials[1]
+    useDistort = True
+
+    estimateMatrix = estimateProjectMatrix(100, 0.0000001, material)
+    omittedIndex = numpy.argmax(estimateMatrix)
+    estimateMatrix = estimateMatrix/estimateMatrix[omittedIndex]
+    estimate11Matrix = numpy.delete(estimateMatrix, omittedIndex)
+    estimate13Matrix = numpy.append(estimate11Matrix, [0, 0])
+
+    result = solve(estimate13Matrix, useDistort, material)
     function = result.fun
     matrix = estimate13Matrix
     iterations = 10
-    while (function >0.001):
-        estimateMatrix = estimateProjectMatrix(100, 0.0000001)
+    while (function > 0.01):
+        estimateMatrix = estimateProjectMatrix(100, 0.0000001, material)
         omittedIndex = numpy.argmax(estimateMatrix)
         estimateMatrix = estimateMatrix/estimateMatrix[omittedIndex]
         estimate11Matrix = numpy.delete(estimateMatrix, omittedIndex)
         estimate13Matrix = numpy.append(estimate11Matrix, [0, 0])
-        result = solve(estimate13Matrix)
+        result = solve(estimate13Matrix, useDistort, material)
         matrix = result.x
         function = result.fun
     for i in range(iterations):
         if result.fun < function:
             function = result.fun
             matrix = result.x
-        result = solve(matrix)
+        result = solve(matrix, useDistort, material)
         print function
     print matrix
+    print sumOferrors(matrix, vectorLists[materialIDs[material]], omittedIndex)
 
 
 
