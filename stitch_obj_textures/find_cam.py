@@ -5,12 +5,20 @@ import numpy
 from scipy.optimize import minimize
 import random
 import math
+import thread
+
+key = ''
+def userInput():
+    while (True):
+        global key
+        key = raw_input()
 
 
 def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('input',
                         help='.obj file to use to deduce camera angles')
+    parser.add_argument('materialID', type=int)
 
     result = parser.parse_args()
     result.name = result.input.rstrip('.obj')
@@ -110,18 +118,6 @@ def main():
             matrix[n + i][:] = numpy.concatenate((zeros, xyz1, -v*xyz1))
         return matrix
 
-    def sumOfSquares(projectMatrix):
-        projectMatrix = numpy.reshape(projectMatrix, (3, 4))
-        total = 0
-        for i in range(1000):
-            vert = random.choice(vectorLists[0])
-            olduv = vert[:2]
-            xyz1 = numpy.array([vert[2], vert[3], vert[4], 1])
-            newuvz = numpy.dot(projectMatrix, xyz1)
-            newuv = newuvz[:2]/newuvz[2]
-            total = total + (newuv[0]-olduv[0])**2 + (newuv[1]-olduv[1])**2
-        return total
-
     def estimateProjectMatrix(n, epsilon, material):
         total = numpy.zeros((12))
         i = 0
@@ -174,65 +170,46 @@ def main():
             total = total + error
         return total/len(vertexSet)
 
-    def solve(matrix, useDistortion, material):
+    def solve(matrix, useDistortion, material, maxiter):
         if not useDistortion:
             matrix = matrix[:11]
-        vertexSet = sampleVerticies(100, material)
+        vertexSet = sampleVerticies(20, material)
         result = minimize(sumOferrors,
                           matrix,
                           args=(vertexSet, omittedIndex),
                           method='Nelder-Mead',
-                          options={'maxiter': 1000, 'disp': False})
+                          options={'maxiter': maxiter, 'disp': False})
         return result
 
-    material = materials[1]
+    material = materials[args.materialID]
     useDistort = True
 
-    estimateMatrix = estimateProjectMatrix(100, 0.0000001, material)
-    omittedIndex = numpy.argmax(estimateMatrix)
-    estimateMatrix = estimateMatrix/estimateMatrix[omittedIndex]
-    estimate11Matrix = numpy.delete(estimateMatrix, omittedIndex)
-    estimate13Matrix = numpy.append(estimate11Matrix, [0, 0])
-
-    result = solve(estimate13Matrix, useDistort, material)
-    function = result.fun
-    matrix = estimate13Matrix
-    iterations = 10
-    while (function > 0.01):
+    functionValue = 1.0
+    iterations = 1000
+    thread.start_new_thread(userInput,())
+    matrix = numpy.zeros((13))
+    while (functionValue > 0.01):
         estimateMatrix = estimateProjectMatrix(100, 0.0000001, material)
         omittedIndex = numpy.argmax(estimateMatrix)
         estimateMatrix = estimateMatrix/estimateMatrix[omittedIndex]
         estimate11Matrix = numpy.delete(estimateMatrix, omittedIndex)
         estimate13Matrix = numpy.append(estimate11Matrix, [0, 0])
-        result = solve(estimate13Matrix, useDistort, material)
+        result = solve(estimate13Matrix, useDistort, material, 1000)
         matrix = result.x
-        function = result.fun
-    for i in range(iterations):
-        if result.fun < function:
-            function = result.fun
+        functionValue = result.fun
+    i = 0
+
+    numpy.save("%s.npy" % material, matrix)
+
+    while (i < iterations and key != 'stop'):
+        if result.fun < functionValue:
+            functionValue = result.fun
             matrix = result.x
-        result = solve(matrix, useDistort, material)
-        print function
+        result = solve(matrix, useDistort, material, 1000)
+        print functionValue
     print matrix
+    numpy.save("%s.npy" % material, matrix)
     print sumOferrors(matrix, vectorLists[materialIDs[material]], omittedIndex)
-
-
-
-    #===========================================================================
-    # projectMatrix = numpy.reshape(projectMatrix, (3, 4))
-    # mag = numpy.linalg.norm(projectMatrix[:][0])
-    # projectMatrix = projectMatrix/mag
-    # print projectMatrix
-    # for i in range(10):
-    #     vert = random.choice(vectorLists[0])
-    #     olduv = vert[:2]
-    #     xyz1 = numpy.array([vert[2], vert[3], vert[4], 1])
-    #     newuvz = numpy.dot(projectMatrix, xyz1)
-    #     newuv = newuvz[:2]/newuvz[2]
-    #     print ("Old UV = " + str(olduv))
-    #     print ("New UV = " + str(newuv))
-    #     print ''
-    #===========================================================================
 
 if __name__ == '__main__':
     main()
