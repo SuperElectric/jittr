@@ -181,25 +181,40 @@ def main():
                           options={'maxiter': maxiter, 'disp': False})
         return result
 
+    # saves matrix11 or matrix13 to .npy array that has 14 elements.
+    # The last two elements are the distortion values
+    def save(matrix, omittedIndex, material):
+        projectMatrix = numpy.concatenate((matrix[:omittedIndex],
+                                           [1],
+                                           matrix[omittedIndex:]))
+        K1 = 0
+        K2 = 0
+        if len(matrix) == 13:
+            K1 = matrix[11]
+            K2 = matrix[12]
+        saveMatrix = numpy.append(projectMatrix, (K1, K2))
+        numpy.save('%s.npy' % material, saveMatrix)
+
     material = materials[args.materialID]
     useDistort = True
 
     functionValue = 1.0
     iterations = 1000
-    thread.start_new_thread(userInput,())
+    thread.start_new_thread(userInput, ())
     matrix = numpy.zeros((13))
-    while (functionValue > 0.01):
+    omittedIndex = 0
+    while (functionValue > 0.00001):
         estimateMatrix = estimateProjectMatrix(100, 0.0000001, material)
         omittedIndex = numpy.argmax(estimateMatrix)
         estimateMatrix = estimateMatrix/estimateMatrix[omittedIndex]
         estimate11Matrix = numpy.delete(estimateMatrix, omittedIndex)
         estimate13Matrix = numpy.append(estimate11Matrix, [0, 0])
-        result = solve(estimate13Matrix, useDistort, material, 1000)
+        result = solve(estimate13Matrix, useDistort, material, 10)
         matrix = result.x
         functionValue = result.fun
     i = 0
 
-    numpy.save("%s.npy" % material, matrix)
+    save(matrix, omittedIndex, material)
 
     while (i < iterations and key != 'stop'):
         if result.fun < functionValue:
@@ -208,7 +223,7 @@ def main():
         result = solve(matrix, useDistort, material, 1000)
         print functionValue
     print matrix
-    numpy.save("%s.npy" % material, matrix)
+    save(matrix, omittedIndex, material)
     print sumOferrors(matrix, vectorLists[materialIDs[material]], omittedIndex)
 
 if __name__ == '__main__':
