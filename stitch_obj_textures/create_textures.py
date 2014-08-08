@@ -37,7 +37,7 @@ def xyz_to_uv(matrix, K1, K2, aspect, xyz1_array):
     uv_array = numpy.swapaxes(uv_array, 0, 1)
     return uv_array
 
-def main():
+def main(render, material_set):
     
     object = bpy.context.active_object
     
@@ -55,7 +55,7 @@ def main():
         bpy.ops.object.editmode_toggle()
 
     # For each material in turn, project UVs and bake to new image.
-    for materialID in range(len(materials):
+    for materialID in material_set:
         material, texture = materials[materialID]
         
         # Set texture source to correct image
@@ -114,6 +114,18 @@ def main():
                     index += 1
             bmesh.update_edit_mesh(me)
         set_uvs()
+        
+        if render:
+            
+            # Set active texture to UVnew
+            object.data.uv_textures['UVnew'].active = True
+            
+            # Bake image
+            bpy.context.scene.render.bake_type = 'TEXTURE'
+            bpy.ops.object.bake_image()
+            bpy.data.images['bake_image'].save_render(
+                filepath='%s/unwrapped/%s.png' % (location, material))
 
 if __name__ == "__main__":
-    main()
+    material_set = range(11,16)
+    main(True, material_set)

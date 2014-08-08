@@ -6,6 +6,7 @@ from scipy.optimize import minimize
 import random
 import math
 import thread
+import pylab
 
 key = ''
 def userInput():
@@ -141,7 +142,7 @@ def main():
         # for now, this assumes distortion is radial from the centre of the UV map
         # with corrected aspect ratio
         projectMatrix = numpy.reshape(projectMatrix, (3, 4))
-        xyz1 = numpy.append(xyz,(1.0))
+        xyz1 = numpy.append(xyz, (1.0))
         uvz = numpy.dot(projectMatrix, xyz1)
         uv = uvz[:2]/uvz[2]
         tempUv = numpy.array([ScaleU*(uv[0]-0.5), ScaleV*(uv[1]-0.5)])
@@ -165,10 +166,31 @@ def main():
         for vertex in vertexSet:
             xyz = numpy.array(vertex[2:])
             uv = numpy.array(vertex[:2])
-            newUv = xyzToUv(projectMatrix, K1, K2, 1, 1.333333, xyz)
+            newUv = xyzToUv(projectMatrix, K1, K2, 1.0, 1.333333, xyz)
             error = (uv[0] - newUv[0])**2 + (uv[1] - newUv[1])**2
             total = total + error
         return total/len(vertexSet)
+
+    def errorArray(matrix, vertexSet, omittedIndex):
+        list = []
+        projectMatrix = numpy.concatenate((matrix[:omittedIndex],
+                                           [1],
+                                           matrix[omittedIndex:]))
+        projectMatrix = numpy.reshape(projectMatrix[:12], (3, 4))
+        if len(matrix) == 13:
+            K1 = matrix[11]
+            K2 = matrix[12]
+        else:
+            K1 = 0
+            K2 = 0
+        for vertex in vertexSet:
+            xyz = numpy.array(vertex[2:])
+            uv = numpy.array(vertex[:2])
+            newUv = xyzToUv(projectMatrix, K1, K2, 1.0, 1.333333, xyz)
+            error = (uv[0] - newUv[0])**2 + (uv[1] - newUv[1])**2
+            list.append(error)
+        return numpy.array(list)
+
 
     def solve(matrix, useDistortion, material, maxiter):
         if not useDistortion:
@@ -225,6 +247,9 @@ def main():
     print matrix
     save(matrix, omittedIndex, material)
     print sumOferrors(matrix, vectorLists[materialIDs[material]], omittedIndex)
+    pylab.hist(errorArray(matrix, vectorLists[materialIDs[material]], omittedIndex))
+    pylab.show()
+
 
 if __name__ == '__main__':
     main()
