@@ -1,10 +1,25 @@
 Dependencies:
 Python 2.7 or higher.
+Panda3d
 Matplotlib 1.1.1rc or higher
 Numpy 1.6.1 or higher
+PyYaml
+For using Blender version:
+Python 3.2 or higher (for running Blender version)
+Blender
+PyYaml (Python 3)
+Numpy (Python 3)
 
-On Ubuntu: 
-apt-get install python python-numpy python-matplotlib
+On Ubuntu:
+Download and install latest panda3d .deb
+Run: sudo apt-get install python python-numpy python-matplotlib python-yaml
+If using with Blender, also run:
+sudo apt-get install python3 blender python3-numpy python3-yaml
+
+To install latest version of Blender on Ubuntu, use IRIE Shinsuke's PPA, as follows:
+sudo add-apt-repository ppa:irie/blender
+sudo apt-get update
+sudo apt-get install blender
 
 Edit ~/.bashrc to add the following line:
 export PYTHONPATH=/full/path/to/jittr/
