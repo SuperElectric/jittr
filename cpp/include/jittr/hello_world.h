@@ -2,6 +2,6 @@
 
 namespace jittr {
 
-void hello_world();
+void hello_world(const std::string& name);
 
 }
