@@ -246,9 +246,9 @@ def main():
         print functionValue
     print matrix
     save(matrix, omittedIndex, material)
-    print sumOferrors(matrix, vectorLists[materialIDs[material]], omittedIndex)
-    pylab.hist(errorArray(matrix, vectorLists[materialIDs[material]], omittedIndex))
-    pylab.show()
+    #print sumOferrors(matrix, vectorLists[materialIDs[material]], omittedIndex)
+    #pylab.hist(errorArray(matrix, vectorLists[materialIDs[material]], omittedIndex))
+    #pylab.show()
 
 
 if __name__ == '__main__':

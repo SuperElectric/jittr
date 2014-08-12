@@ -1,2 +1,6 @@
 cpp/build/*
 .metadata/*
+*.project
+*.pydevproject
+*.blend1
+cpp/codeblocks/*
