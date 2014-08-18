@@ -1,1 +1,0 @@
-/home/daniel/urop/jittr/find_cam_cpp/build/src/CMakeFiles/find_cam.dir

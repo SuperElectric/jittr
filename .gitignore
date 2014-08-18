@@ -1,4 +1,5 @@
 cpp/build/*
+find_cam_cpp/build/*
 .metadata/*
 *.project
 *.pydevproject

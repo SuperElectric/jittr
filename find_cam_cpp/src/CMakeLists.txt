@@ -14,3 +14,5 @@ message(STATUS "project source dir was " ${PROJECT_SOURCE_DIR})
 add_executable (find_cam find_cam.cpp) 
 
 target_link_libraries (find_cam ${CERES_LIBRARIES} gflags)
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")

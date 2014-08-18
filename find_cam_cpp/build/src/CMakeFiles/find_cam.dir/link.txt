@@ -1,1 +1,0 @@
-/usr/bin/c++       CMakeFiles/find_cam.dir/find_cam.cpp.o  -o ../bin/find_cam -rdynamic /usr/local/lib/libceres.a -lgflags -lglog -lspqr -lcholmod -lccolamd -lcamd -lcolamd -lamd -llapack -lblas -Wl,-Bstatic -lsuitesparseconfig -Wl,-Bdynamic -lrt -llapack -lblas -Wl,-Bstatic -lsuitesparseconfig -Wl,-Bdynamic -lrt -lgomp -lpthread 
