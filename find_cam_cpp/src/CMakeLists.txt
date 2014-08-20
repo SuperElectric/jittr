@@ -11,8 +11,10 @@ include_directories (
 
 message(STATUS "project source dir was " ${PROJECT_SOURCE_DIR})
 
-add_executable (find_cam find_cam.cpp) 
+add_library (findcam find_cam.cpp)
 
-target_link_libraries (find_cam ${CERES_LIBRARIES} gflags)
+add_executable (find_cam find_cam_main.cpp) 
+
+target_link_libraries (find_cam findcam ${CERES_LIBRARIES} gflags)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
