@@ -36,8 +36,8 @@ void addNoise(const double* const oldCamera, double* newCamera){
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis (0,1);
-    for (int i=0; i<12; i++){
-        double noiseFactor = 1 + 2.0*2*(dis(gen) - 0.5);
+    for (int i=3; i<6; i++){
+        double noiseFactor = 1 + 10.0*2*(dis(gen) - 0.5);
         newCamera[i] = noiseFactor*oldCamera[i];
     }
 }
@@ -122,15 +122,67 @@ void parseObj(const std::string& filePath, std::vector<vec3>* xyzPtr,
     }
 }
 
+void createUvxyzLists (const std::vector <vec3>& xyzList, const std::vector <vec2>& uvList,
+                       const std::vector <index3>& indexList,
+                       std::vector<vec5>* const arrayOfVectors){
+    int uvxyzCount = indexList.size();
+    vec3 xyz;
+    vec2 uv;
+    vec5 uvxyz;
+    index3 mvvt;
+    for (int i=0; i<uvxyzCount; i++){
+        mvvt = indexList[i];
+        uv = uvList[mvvt.vtid-1];
+        xyz = xyzList[mvvt.vid-1];
+        uvxyz.x = xyz.x; uvxyz.y = xyz.y; uvxyz.z = xyz.z;
+        uvxyz.u = uv.u; uvxyz.v = uv.v;
+        arrayOfVectors[mvvt.mid].push_back(uvxyz);
+    }
+}
+
+void selectRandomVerts(const std::vector<vec5>& vectorOfVerts,
+                       int nVerts,
+                       vec5*const arrayOfVerts){
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis (0, vectorOfVerts.size()-1);
+    for (int i=0; i<nVerts; i++){
+        arrayOfVerts[i] = vectorOfVerts[dis(gen)];
+    }
+}  
+
 int main(int argc, char* argv[]) {
-    google::InitGoogleLogging(argv[0]);
-    double camera[12] = {0,0,0,  0,0,-10.0, 1,1,0,0, 0.1,0.1};
-    double cameraGuess[12];
-    addNoise(camera, cameraGuess);
-    int nVerts = 100;
-    double* verts = new double[5*nVerts];
-    calculateVerts(verts, nVerts, camera);
-    jittr::solveCamera(verts, nVerts, cameraGuess);
+    //google::InitGoogleLogging(argv[0]);
+    //double camera[12] = {0,0,0,  0,0,-10.0, 1,1,0,0, 0.1,0.1};
+    //double cameraGuess[12];
+    //addNoise(camera, cameraGuess);
+    //int nVerts = 100;
+    //double* verts = new double[5*nVerts];
+    //calculateVerts(verts, nVerts, camera);
+    //jittr::solveCamera(verts, nVerts, cameraGuess);
+    
+    using namespace std;
+    vector <vec3> xyzList;
+    vector <vec2> uvList;
+    vector <index3> indexList;
+    map<string, int> materialIDs;
+    string file = "/home/daniel/urop/jittr/jittr/assets/models/mouse/mouse.obj";
+    parseObj(file, &xyzList, &uvList, &indexList, &materialIDs);
+    vector<vec5> arrayOfVectors[materialIDs.size()];
+    createUvxyzLists(xyzList, uvList, indexList, arrayOfVectors);
+
+    int nVerts = 100000;
+    int material = 0;
+    vec5* arrayOfVerts = new vec5 [nVerts];
+    selectRandomVerts(arrayOfVectors[material], nVerts, arrayOfVerts);
+
+    double camera[12] = {0,0,0,  0,0,0, 1,1,0,0, 0,0};
+    double cameraGuess[12] = {-0.06,0.05,0.02,
+                              -14.5,55.0,-189.2,
+                              -1.77,-1.33,0.54,0.50,
+                               0.012,-0.0029};
+//    addNoise(camera, cameraGuess);
+    jittr::solveCamera(arrayOfVerts, nVerts, cameraGuess);
     printCamera(cameraGuess);
     return 0;
 }

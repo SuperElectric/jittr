@@ -7,7 +7,9 @@ namespace jittr{
 struct UVResidual {
     UVResidual(){}
     UVResidual(double x, double y, double z, double u, double v):
-        x(x), y(y), z(z), u(u), v(v) {}
+        u(u), v(v), x(x), y(y), z(z) {}
+    UVResidual(vec5 uvxyz):
+        u(uvxyz.u), v(uvxyz.v), x(uvxyz.x), y(uvxyz.y), z(uvxyz.z) {}
     template <typename T>
     bool operator() (const T* const camera, T* residuals) const {
         // camera[0,1,2] = axis angle
@@ -23,24 +25,24 @@ struct UVResidual {
         // multiply p by calibration matrix and divide by p[2]
         p[0] = p[0]*camera[6]/p[2] + camera[8];
         p[1] = p[1]*camera[7]/p[2] + camera[9];
+        // apply distortion
+        T rsqrd = p[0]*p[0] + p[1]+p[1];
+        p[0] = p[0] + p[0]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
+        p[1] = p[1] + p[1]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
     	residuals[0] = p[0] - T(u);
 	    residuals[1] = p[1] - T(v);
         return true;
     }
     private:
-    double x, y, z, u, v;
+    double u, v, x, y, z;
 };
 
-void solveCamera(const double* const verts, int nVerts, double* camera){
+void solveCamera(const vec5* const arrayOfVerts, int nVerts, double* camera){
     ceres::Problem problem;
     for (int i=0; i < nVerts; i++){
         ceres::CostFunction* function =
             new ceres::AutoDiffCostFunction<UVResidual, 2, 12>(
-                new UVResidual(verts[5*i],
-                               verts[5*i+1],
-                               verts[5*i+2],
-                               verts[5*i+3],
-                               verts[5*i+4])
+                new UVResidual(arrayOfVerts[i])
             );
         problem.AddResidualBlock(function, NULL, camera);
     }
