@@ -109,14 +109,16 @@ void parseObj(const std::string& filePath,
               std::vector<vec3>* xyzPtr,
               std::vector<vec2>* uvPtr,
               std::vector<index3>* indexPtr,
-              std::map<std::string, int>* materialsPtr){
+              std::map<std::string, int>* materialIDsPtr,
+              std::map<int, std::string>* materialNamesPtr){
     using namespace std;
     ifstream in(filePath.c_str());
     xyzPtr->clear();
     uvPtr->clear();
     indexPtr->clear();
 
-    map<string, int>& materialIDs = *materialsPtr;
+    map<string, int>& materialIDs = *materialIDsPtr;
+    map<int, string>& materialNames = *materialNamesPtr;
     int materialID = 0;
 
     while (in.good()){
@@ -167,6 +169,7 @@ void parseObj(const std::string& filePath,
             if (materialIDs.count(material) == 0){
                 int nMats = materialIDs.size();
                 materialIDs[material] = nMats;
+                materialNames[nMats] = material;
             }
             materialID = materialIDs[material];
         }
@@ -201,4 +204,30 @@ void selectRandomVerts(const std::vector<vec5>& vectorOfVerts,
     for (int i=0; i<nVerts; i++){
         arrayOfVerts[i] = vectorOfVerts[dis(gen)];
     }
+}
+
+void outputFile(const double* camera, std::string materialName){
+    using namespace std;
+    ofstream file;
+    file.open(materialName + ".yaml");
+    file << "axisAngle: [" << camera[0] << ", "
+        << camera[1] << ", " << camera[2] << "] \n";
+    file << "translation: [" << camera[3] << ", "
+        << camera[4] << ", " << camera[5] << "] \n";
+    file << "offsetU : " << camera[6] << endl;
+    file << "offsetV : " << camera[7] << endl;
+    file << "scaleU : " << camera[8] << endl;
+    file << "scaleV : " << camera[9] << endl;
+    file << "K1 : " << camera[10] << endl;
+    file << "K2 : " << camera[11] << endl;
+    double col0[3], col1[3], col2[3];
+    double x[3] = {1,0,0}; double y[3] = {0,1,0}; double z[3] = {0,0,1};
+    ceres::AngleAxisRotatePoint(camera, x, col0);
+    ceres::AngleAxisRotatePoint(camera, y, col1);
+    ceres::AngleAxisRotatePoint(camera, z, col2);
+    file << "rotationMatrix: [["
+         << col0[0] << ", " << col1[0] << ", " << col2[0] << "], ["
+         << col0[1] << ", " << col1[1] << ", " << col2[1] << "], ["
+         << col0[2] << ", " << col1[2] << ", " << col2[2] << "]]";
+    file.close();
 }

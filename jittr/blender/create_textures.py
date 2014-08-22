@@ -1,4 +1,4 @@
-import bpy, bmesh, numpy
+import bpy, bmesh, numpy, yaml
 
 
 def read_mtl(object):
@@ -82,15 +82,35 @@ def main(render, material_set):
         aspect_ratio = float(bpy.data.images[texture].size[0]) \
             / float(bpy.data.images[texture].size[1])
 
-        # read numpy file
+        # read npy file (currently unused)
         numpy_file = '%s%s.npy' % (location, material)
-        def read_numpy_file(file):
-            matrix14 = numpy.load(file)
+        def read_numpy_file(filePath):
+            matrix14 = numpy.load(filePath)
             project_matrix = numpy.reshape(matrix14[:12], (3, 4))
             K1 = matrix14[12]
             K2 = matrix14[13]
             return [K1, K2, project_matrix]
-        K1, K2, project_matrix = read_numpy_file(numpy_file)
+        # read yaml file
+        yaml_file = '%s%s.yaml' % (location, material)
+        def read_yaml_file(filePath):
+            doc = yaml.load(open(filePath));
+            K1 = doc['K1']
+            K2 = doc['K2']
+            rot_matrix = numpy.array(doc['rotationMatrix'])
+            translation = numpy.array(doc['translation'])
+            cam_loc = numpy.dot(rot_matrix.transpose(), translation)
+            project_matrix = numpy.insert(rot_matrix, 3, values=translation,
+                                          axis=1)
+            u0, v0 = doc['offsetU'], doc['offsetV']
+            uScale, vScale = doc['scaleU'], doc['scaleV']
+            calib_matrix = numpy.array([[uScale, 0.0   , u0 ],
+                                        [0.0   , vScale, v0 ],
+                                        [0.0   , 0.0   , 1.0]])
+            project_matrix = numpy.dot(calib_matrix, project_matrix)
+            print (project_matrix.shape)
+            return [K1, K2, project_matrix, cam_loc]  
+        K1, K2, project_matrix, camera_location = read_yaml_file(yaml_file)
+        #K1, K2, project_matrix = read_numpy_file(numpy_file)
 
         # Calculate UVs
         def set_uvs():
@@ -127,5 +147,6 @@ def main(render, material_set):
                 filepath='%s/unwrapped/%s.png' % (location, material))
 
 if __name__ == "__main__":
-    material_set = range(11, 16)
+    material_set = range(0,1)
     main(True, material_set)
+
