@@ -89,24 +89,7 @@ def main():
                     else:
                         xyzID = int(numbers[0]) - 1
                         uvID = int(numbers[1]) - 1
-                    materialID = materials.index(rse.cmake'
-rm 'cpp/cmake_modules/FindEigen.cmake'
-rm 'cpp/cmake_modules/FindGflags.cmake'
-rm 'cpp/cmake_modules/FindGlog.cmake'
-rm 'cpp/cmake_modules/FindSharedPtr.cmake'
-rm 'cpp/cmake_modules/FindSphinx.cmake'
-rm 'cpp/cmake_modules/FindSuiteSparse.cmake'
-rm 'cpp/cmake_modules/UpdateCacheVariable.cmake'
-rm 'cpp/cmake_modules/config.h.in'
-rm 'cpp/cmake_modules/iOS.cmake'
-rm 'cpp/cmake_modules/uninstall.cmake.in'
-rm 'cpp/include/jittr/hello_world.h'
-rm 'cpp/src/CMakeLists.txt'
-rm 'cpp/src/hello_world.cpp'
-rm 'cpp/src/hello_world_main.cpp'
-daniel@daniel-Precision-M4800 ~/urop/jittr/jittr $ git mv ../assets .
-daniel@daniel-Precision-M4800 ~/urop/jittr/jittr $ 
-currentMaterial)
+                    materialID = materials.index(currentMaterial)
                     vectorLists[materialID].append((uvList[uvID][0],
                                                     uvList[uvID][1],
                                                     xyzList[xyzID][0],
