@@ -30,7 +30,7 @@ struct UVResidual {
         p[0] = p[0]*camera[6]/p[2] + camera[8];
         p[1] = p[1]*camera[7]/p[2] + camera[9];
         // apply distortion
-        T rsqrd = p[0]*p[0] + p[1]+p[1];
+        T rsqrd = p[0]*p[0] + p[1]*p[1];
         p[0] = p[0] + p[0]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
         p[1] = p[1] + p[1]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
     	residuals[0] = p[0] - T(u);
@@ -62,6 +62,23 @@ void solveCamera(const vec5* const arrayOfVerts, int nVerts, double* camera){
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.BriefReport() << "\n";
 }
+
+// temporary function!
+vec2 xyzToUv (const double* camera, vec3 point) {
+    double p[3];
+    double xyz[3] = {point.x, point.y, point.z};
+    ceres::AngleAxisRotatePoint(camera, xyz, p);
+    p[0] += camera[3]; p[1]+= camera[4]; p[2]+= camera[5];
+    p[0] = p[0]*camera[6]/p[2] + camera[8];
+    p[1] = p[1]*camera[7]/p[2] + camera[9];
+    double rsqrd = p[0]*p[0] + p[1]*p[1];
+    p[0] = p[0] + p[0]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
+    p[1] = p[1] + p[1]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
+    vec2 uv;
+    uv.u = p[0]; uv.v = p[1];
+    return uv;
+}
+
 
 void calculateVerts(double* verts, int nVerts, const double* const camera){    
     double xyz[3];
