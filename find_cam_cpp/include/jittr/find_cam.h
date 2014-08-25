@@ -25,6 +25,3 @@ void selectRandomVerts(const std::vector<vec5>& vectorOfVerts,
                        vec5* arrayOfVerts);
 
 void outputFile(const double* camera, std::string materialName);
-
-// temporary function!
-vec2 xyzToUv (const double* camera, vec3 point);

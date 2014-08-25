@@ -63,23 +63,6 @@ void solveCamera(const vec5* const arrayOfVerts, int nVerts, double* camera){
     std::cout << summary.BriefReport() << "\n";
 }
 
-// temporary function!
-vec2 xyzToUv (const double* camera, vec3 point) {
-    double p[3];
-    double xyz[3] = {point.x, point.y, point.z};
-    ceres::AngleAxisRotatePoint(camera, xyz, p);
-    p[0] += camera[3]; p[1]+= camera[4]; p[2]+= camera[5];
-    p[0] = p[0]*camera[6]/p[2] + camera[8];
-    p[1] = p[1]*camera[7]/p[2] + camera[9];
-    double rsqrd = p[0]*p[0] + p[1]*p[1];
-    p[0] = p[0] + p[0]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
-    p[1] = p[1] + p[1]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
-    vec2 uv;
-    uv.u = p[0]; uv.v = p[1];
-    return uv;
-}
-
-
 void calculateVerts(double* verts, int nVerts, const double* const camera){    
     double xyz[3];
     double p[3];
@@ -231,10 +214,10 @@ void outputFile(const double* camera, std::string materialName){
         << camera[1] << ", " << camera[2] << "] \n";
     file << "translation: [" << camera[3] << ", "
         << camera[4] << ", " << camera[5] << "] \n";
-    file << "offsetU : " << camera[6] << endl;
-    file << "offsetV : " << camera[7] << endl;
-    file << "scaleU : " << camera[8] << endl;
-    file << "scaleV : " << camera[9] << endl;
+    file << "scaleU : " << camera[6] << endl;
+    file << "scaleV : " << camera[7] << endl;
+    file << "offsetU : " << camera[8] << endl;
+    file << "offsetV : " << camera[9] << endl;
     file << "K1 : " << camera[10] << endl;
     file << "K2 : " << camera[11] << endl;
     double col0[3], col1[3], col2[3];

@@ -23,7 +23,6 @@ def read_mtl(object):
 
 def xyz_to_uv(matrix, K1, K2, aspect, xyz1_array):
     xyz1_array = numpy.swapaxes(xyz1_array, 0, 1)
-    print(numpy.shape(xyz1_array))
     uvz_array = numpy.dot(matrix, xyz1_array)
     uv_aspect_array = numpy.dot(numpy.diag([aspect, 1.0]),
                                 numpy.divide(uvz_array[:2], uvz_array[2]))
@@ -107,7 +106,6 @@ def main(render, material_set):
                                         [0.0   , vScale, v0 ],
                                         [0.0   , 0.0   , 1.0]])
             project_matrix = numpy.dot(calib_matrix, project_matrix)
-            print (project_matrix.shape)
             return [K1, K2, project_matrix, cam_loc]  
         K1, K2, project_matrix, camera_location = read_yaml_file(yaml_file)
         #K1, K2, project_matrix = read_numpy_file(numpy_file)
@@ -147,6 +145,7 @@ def main(render, material_set):
                 filepath='%s/unwrapped/%s.png' % (location, material))
 
 if __name__ == "__main__":
-    material_set = range(0,1)
+    material_set = range(0,15)
     main(True, material_set)
+
 

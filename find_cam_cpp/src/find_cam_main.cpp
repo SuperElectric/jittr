@@ -61,21 +61,7 @@ int main(int argc, char* argv[]) {
     solveCamera(arrayOfVerts, nVerts, cameraGuess);
     printCamera(cameraGuess);
     outputFile(cameraGuess, materialNames[materialID]);
-<<<<<<< HEAD
 
-        vec5 uvxyz = arrayOfVectors[materialID][100];
-        vec3 xyz;
-        vec2 uvNew, uvOld;
-        xyz.x = uvxyz.x; xyz.y = uvxyz.y; xyz.z = uvxyz.z;
-        uvOld.u = uvxyz.u; uvOld.v = uvxyz.v;
-        uvNew = xyzToUv(cameraGuess, xyz);
-        cout << endl << "uvOld = "<< uvOld.u << ","<< uvOld.v << endl;
-        cout << endl << "uvNew = "<< uvNew.u << ","<< uvNew.v << endl;
-        
-=======
-    vec5 uvxyz = arrayOfVectors[materialID][100];
-    cout << uvxyz.u << endl << uvxyz.v << endl << uvxyz.x << endl << uvxyz.y << endl << uvxyz.z << endl;
->>>>>>> ebe970b6a3755388d340d429e108a7dec4c1d6ae
     return 0;
 }
 
