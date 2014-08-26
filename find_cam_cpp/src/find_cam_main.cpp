@@ -43,25 +43,26 @@ int main(int argc, char* argv[]) {
     vector<vec5>* arrayOfVectors = new vector<vec5> [materialIDs.size()];
     createUvxyzLists(xyzList, uvList, indexList, arrayOfVectors);
         
-    int materialID;
-    stringstream(argv[2]) >> materialID;
-    cout << "material = " << materialID;
-    if (materialID >= materialIDs.size()){
+    int materialIDMax;
+    stringstream(argv[2]) >> materialIDMax;
+    cout << "Using materials 0 to " << materialIDMax-1;
+    if (materialIDMax > materialIDs.size()){
         cout << "Material index is too high" << endl;
         return 1;
     }
 
     int nVerts = 1000;
-    vec5* arrayOfVerts = new vec5 [nVerts];
-    selectRandomVerts(arrayOfVectors[materialID], nVerts, arrayOfVerts);
     double cameraGuess[12] = {-0.06,0.05,0.02,
                               -14.5,55.0,-189.2,
                               -1.77,-1.33,0.54,0.50,
                                0.012,-0.0029};
-    solveCamera(arrayOfVerts, nVerts, cameraGuess);
-    printCamera(cameraGuess);
-    outputFile(cameraGuess, materialNames[materialID]);
-
+    for (int materialID=0; materialID<materialIDMax; materialID++){
+        vec5* arrayOfVerts = new vec5 [nVerts];
+        selectRandomVerts(arrayOfVectors[materialID], nVerts, arrayOfVerts);
+        solveCamera(arrayOfVerts, nVerts, cameraGuess);
+        printCamera(cameraGuess);
+        outputFile(cameraGuess, materialNames[materialID]);
+    }
     return 0;
 }
 

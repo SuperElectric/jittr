@@ -37,7 +37,7 @@ def xyz_to_uv(matrix, K1, K2, aspect, xyz1_array):
 
 
 def main(render, material_set):
-
+    
     object = bpy.context.active_object
 
     # Read mtl using location specified in mtl_file in custom properties:
@@ -97,7 +97,7 @@ def main(render, material_set):
             K2 = doc['K2']
             rot_matrix = numpy.array(doc['rotationMatrix'])
             translation = numpy.array(doc['translation'])
-            cam_loc = numpy.dot(rot_matrix.transpose(), translation)
+            cam_loc = -numpy.dot(rot_matrix.transpose(), translation)
             project_matrix = numpy.insert(rot_matrix, 3, values=translation,
                                           axis=1)
             u0, v0 = doc['offsetU'], doc['offsetV']
@@ -109,6 +109,11 @@ def main(render, material_set):
             return [K1, K2, project_matrix, cam_loc]  
         K1, K2, project_matrix, camera_location = read_yaml_file(yaml_file)
         #K1, K2, project_matrix = read_numpy_file(numpy_file)
+        # Move empty called 'locationEmpty' to the correct position
+        bpy.data.objects['locationEmpty'].location = camera_location
+        bpy.data.objects['locationEmpty'].keyframe_insert(data_path='location',
+            frame=materialID)
+            
 
         # Calculate UVs
         def set_uvs():
@@ -139,13 +144,13 @@ def main(render, material_set):
             object.data.uv_textures['UVnew'].active = True
 
             # Bake image
-            bpy.context.scene.render.bake_type = 'TEXTURE'
+            bpy.context.scene.render.bake_type = 'FULL'
             bpy.ops.object.bake_image()
             bpy.data.images['bake_image'].save_render(
                 filepath='%s/unwrapped/%s.png' % (location, material))
 
 if __name__ == "__main__":
-    material_set = range(0,15)
+    material_set = range(0,16)
     main(True, material_set)
 
 
