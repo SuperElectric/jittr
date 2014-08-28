@@ -39,6 +39,72 @@ def xyz_to_uv(matrix, K1, K2, aspect, xyz1_array):
 def main(render, material_set):
     
     object = bpy.context.active_object
+    
+    # Make sure required material, texture, bake image, and locationEmpty all exist
+    # and are set up correctly
+    
+    # Set renderer to Blender internal
+    if bpy.context.mode == 'EDIT_MESH':
+        bpy.ops.object.editmode_toggle()
+    bpy.context.scene.render.engine = 'BLENDER_RENDER'
+    # remove all object material slots (not completely necessary, so might change)
+    for material_slot in object.material_slots:
+        bpy.ops.object.material_slot_remove()
+    # Create texture, materials and UVmaps, and smartuvproject UVnew
+    if "temp_material" not in bpy.data.materials:
+        bpy.data.materials.new("temp_material")
+        bpy.data.materials["temp_material"].diffuse_intensity = 1.0
+        bpy.data.materials["temp_material"].specular_intensity = 0.0
+    if "temp_texture" not in bpy.data.textures:
+        bpy.data.textures.new("temp_texture", "IMAGE")
+    if "UVold" not in object.data.uv_textures:
+        if len(object.data.uv_textures) == 8:
+            for tex in object.data.uv_textures:
+                object.data.uv_textures.remove(tex)
+        object.data.uv_textures.new("UVold")
+    if "UVnew" not in object.data.uv_textures:
+        if len(object.data.uv_textures) == 8:
+            for tex in object.data.uv_textures:
+                object.data.uv_textures.remove(tex)
+            object.data.uv_textures.new(name="UVold")
+        object.data.uv_textures.new(name="UVnew")
+        # Now set active UV to UVnew, enter edit mode, uv unwrap, then exit edit mode
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.mesh.select_all(action='SELECT')
+        object.data.uv_textures['UVnew'].active = True
+        bpy.ops.uv.smart_project()
+        bpy.ops.object.editmode_toggle()
+    # create bake image
+    if "bake_image" not in bpy.data.images:
+        bpy.data.images.new("bake_image", 1024, 1024)
+    # create locationEmpty (the reconstructed camera location)
+    if "locationEmpty" not in bpy.data.objects:
+        bpy.ops.object.empty_add()
+        bpy.data.objects[-1].name = "locationEmpty"
+        bpy.data.objects["locationEmpty"].parent = object
+        bpy.data.objects["locationEmpty"].scale = [10,10,10]
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.scene.objects.active = object
+        object.select = True    
+    # Make sure that the relevant UVmaps, textures, materials etc are selected/active
+    # where necessary
+    bpy.data.textures["temp_texture"].type  = "IMAGE"
+    bpy.ops.object.material_slot_add()
+    object.material_slots[0].material = bpy.data.materials["temp_material"]
+    bpy.context.object.active_material = bpy.data.materials["temp_material"]
+    bpy.data.materials["temp_material"].texture_slots.add()
+    bpy.data.materials["temp_material"].texture_slots[0].texture = bpy.data.textures["temp_texture"]
+    bpy.data.materials["temp_material"].texture_slots[0].texture_coords = "UV"
+    bpy.data.materials["temp_material"].texture_slots[0].uv_layer = "UVold"
+    bpy.data.materials["temp_material"].active_texture_index = 0
+    for i in range (len(bpy.data.materials["temp_material"].texture_slots)):
+        if i == 0:
+            bpy.context.object.active_material.use_textures[i] = True
+        else:
+            bpy.context.object.active_material.use_textures[i] = False
+    for uv_face in object.data.uv_textures.active.data:
+        uv_face.image = bpy.data.images["bake_image"]
+
 
     # Read mtl using location specified in mtl_file in custom properties:
     materials = read_mtl(object)
@@ -109,7 +175,9 @@ def main(render, material_set):
             return [K1, K2, project_matrix, cam_loc]  
         K1, K2, project_matrix, camera_location = read_yaml_file(yaml_file)
         #K1, K2, project_matrix = read_numpy_file(numpy_file)
+        
         # Move empty called 'locationEmpty' to the correct position
+        bpy.context.scene.frame_current = materialID
         bpy.data.objects['locationEmpty'].location = camera_location
         bpy.data.objects['locationEmpty'].keyframe_insert(data_path='location',
             frame=materialID)
@@ -144,13 +212,18 @@ def main(render, material_set):
             object.data.uv_textures['UVnew'].active = True
 
             # Bake image
-            bpy.context.scene.render.bake_type = 'FULL'
-            bpy.ops.object.bake_image()
+            bpy.context.scene.render.bake_type = 'TEXTURE'
+            bpy.ops.object.bake_image() 
             bpy.data.images['bake_image'].save_render(
                 filepath='%s/unwrapped/%s.png' % (location, material))
 
 if __name__ == "__main__":
     material_set = range(0,16)
     main(True, material_set)
+
+
+
+
+
 
 

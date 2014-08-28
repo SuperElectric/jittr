@@ -1,7 +1,8 @@
-cpp/build/*
-find_cam_cpp/build/*
 .metadata/*
 *.project
 *.pydevproject
 *.blend1
-cpp/codeblocks/*
+find_cam_cpp/build/*
+jittr/assets/models/*/*.yaml
+jittr/assets/models/*/*.npy
+
