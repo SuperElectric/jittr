@@ -1,6 +1,6 @@
 struct vec3{double x,y,z;};
 struct vec2{double u,v;};
-struct index3{int mid,vid,vtid;};
+struct index3{int materialID,xyzID,uvID;};
 struct vec5{double u,v,x,y,z;};
 struct UVResiduals;
 void solveCamera(const vec5* const arrayOfVerts, int nVerts, double* camera);
@@ -12,8 +12,8 @@ void parseObj(const std::string& filePath,
               std::vector<vec3>* xyzPtr,
               std::vector<vec2>* uvPtr,
               std::vector<index3>* indexPtr,
-              std::map<std::string, int>* materialIDsPtr,
-              std::map<int, std::string>* materialNamesPtr);
+              std::unordered_map<std::string, int>* materialIDsPtr,
+              std::unordered_map<int, std::string>* materialNamesPtr);
 
 void createUvxyzLists (const std::vector <vec3>& xyzList,
                        const std::vector <vec2>& uvList,
@@ -25,3 +25,5 @@ void selectRandomVerts(const std::vector<vec5>& vectorOfVerts,
                        vec5* arrayOfVerts);
 
 void outputFile(const double* camera, std::string materialName);
+void linearEstimateCamera(const vec5* const arrayOfVerts, int nVerts,
+                          double* camera);

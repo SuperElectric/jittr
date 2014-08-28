@@ -1,31 +1,102 @@
 #include "ceres/ceres.h"
 #include "ceres/rotation.h"
+#include "Eigen/Dense"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <random>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include "jittr/find_cam.h"
+
+void linearEstimateCamera(const vec5* const arrayOfVerts, int nVerts,
+                          double* camera){
+    using namespace Eigen;
+    using namespace std;
+    MatrixXf M = MatrixXf::Zero(2*nVerts, 12);
+    for (int i=0; i<nVerts; i++){
+        vec5 s = arrayOfVerts[i];
+        int j = 2*i;        
+        M(j,0)  = s.x;      M(j,1)  = s.y;
+        M(j,2)  = s.z;      M(j,3)  = 1.0;
+        M(j,8)  = -s.u*s.x; M(j,9)  = -s.u*s.y;
+        M(j,10) = -s.u*s.z; M(j,11) = -s.u;
+        j = 2*i + 1;        
+        M(j,4)  = s.x;      M(j,5)  = s.y;
+        M(j,6)  = s.z;      M(j,7)  = 1.0;
+        M(j,8)  = -s.v*s.x; M(j,9)  = -s.v*s.y;
+        M(j,10) = -s.v*s.z; M(j,11) = -s.v;
+    }
+
+    JacobiSVD<MatrixXf>svd(M, ComputeFullU | ComputeFullV);
+    MatrixXf V = svd.matrixV();
+    VectorXf projectMatrix = V.col(0);
+    double error = (M*projectMatrix).squaredNorm();
+    for (int i=1; i<12; i++){
+        VectorXf p = V.col(i);
+        if ((M*p).squaredNorm() < error){
+            projectMatrix = p;
+            error = (M*projectMatrix).squaredNorm();
+        }
+    }
+
+    MatrixXf R (3,3);
+    VectorXf T (3);
+    MatrixXf C = MatrixXf::Zero(3,3);
+    for (int i=0; i<3; i++){
+        for (int j=0; j<3; j++){
+            R(i,j) = projectMatrix[4*i + j];
+        }
+        T[i] = projectMatrix[4*i + 3];
+    }
+    
+    C(0,0) = -1.8;
+    C(1,1) = -1.3;
+    C(2,2) = 1.0;
+    C(0,2) = 0.5;
+    C(1,2) = 0.5;
+    R = C.inverse()*R;
+    double scale = cbrt(R.determinant());
+    R = R / scale;
+    // cout << endl << R<< endl;
+    T = C.inverse()*T;
+    T = T / scale;
+    
+    double rotationMatArray [9];    
+    for (int i=0; i<3; i++){
+        for (int j=0; j<3; j++){
+            rotationMatArray[i + 3*j] = R(i,j);
+        }
+    }
+    
+    ceres::RotationMatrixToAngleAxis(rotationMatArray, camera);
+    camera[3] = T[0], camera[4] = T[1], camera[5] = T[2];
+    camera[6] = C(0,0), camera[7] = C(1,1);
+    camera[8] = C(0,2), camera[9] = C(1,2);
+    camera[10] = camera[11] = 0; 
+    
+}
 
 struct UVResidual {
     UVResidual(){}
     UVResidual(double x, double y, double z, double u, double v):
-        u(u), v(v), x(x), y(y), z(z) {}
+        u_(u), v_(v), x_(x), y_(y), z_(z) {}
     UVResidual(vec5 uvxyz):
-        u(uvxyz.u), v(uvxyz.v), x(uvxyz.x), y(uvxyz.y), z(uvxyz.z) {}
+        u_(uvxyz.u), v_(uvxyz.v), x_(uvxyz.x), y_(uvxyz.y), z_(uvxyz.z) {}
     template <typename T>
     bool operator() (const T* const camera, T* residuals) const {
         // camera[0,1,2] = axis angle
         // camera[3,4,5] = translation
         // camera[6,7,8,9] = uScale, vScale, u0, v0
         // camera[10,11] = K1, K2
-        const T xyz[3] = {T(x), T(y), T(z)};
+        const T xyz[3] = {T(x_), T(y_), T(z_)};
         // let p = rotated xyz about axis camera[0,1,2], by angle |camera[0,1,2]|
         T p[3];
         ceres::AngleAxisRotatePoint(camera, xyz, p);
         // translate p by camera[3,4,5]
-        p[0] += camera[3]; p[1]+= camera[4]; p[2]+= camera[5];
+        p[0] += camera[3];
+        p[1] += camera[4];
+        p[2] += camera[5];
         // multiply p by calibration matrix and divide by p[2]
         p[0] = p[0]*camera[6]/p[2] + camera[8];
         p[1] = p[1]*camera[7]/p[2] + camera[9];
@@ -33,12 +104,12 @@ struct UVResidual {
         T rsqrd = p[0]*p[0] + p[1]*p[1];
         p[0] = p[0] + p[0]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
         p[1] = p[1] + p[1]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
-    	residuals[0] = p[0] - T(u);
-	    residuals[1] = p[1] - T(v);
+    	residuals[0] = p[0] - T(u_);
+	    residuals[1] = p[1] - T(v_);
         return true;
     }
     private:
-    double u, v, x, y, z;
+    double u_, v_, x_, y_, z_;
 };
 
 void solveCamera(const vec5* const arrayOfVerts, int nVerts, double* camera){
@@ -52,10 +123,10 @@ void solveCamera(const vec5* const arrayOfVerts, int nVerts, double* camera){
     }
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_SCHUR;
-    options.minimizer_progress_to_stdout = true;
+    options.minimizer_progress_to_stdout = false;
     options.num_threads = 8;
-   // options.function_tolerance = 0;
-   // options.gradient_tolerance = 0;
+    //options.function_tolerance = 0;
+    //options.gradient_tolerance = 0;
    // options.parameter_tolerance = 0;
    // options.min_trust_region_radius = 0;
     ceres::Solver::Summary summary;
@@ -92,33 +163,33 @@ void addNoise(const double* const oldCamera, double* newCamera){
 
 void printCamera(double camera[]){
     using namespace std;    
-    cout << "rotation: "
-    << camera[0] << ", " 
-    << camera[1] << ", "
-    << camera[2] <<  endl;
-    std::cout << "location: "
-    << camera[3] << ", "
-    << camera[4] << ", "
-    << camera[5] <<  endl;
-    cout << "scale u,v: " << camera[6] << ", " << camera[7] << endl;
-    cout << "offset u,v: " << camera[8] << ", " << camera[9] << endl;
-    cout << "Distortion: " << camera[10] << ", " << camera[11] << endl;
+    cout << "   Rotation: "
+         << camera[0] << ", " 
+         << camera[1] << ", "
+         << camera[2] <<  endl;
+    cout << "   Location: "
+         << camera[3] << ", "
+         << camera[4] << ", "
+         << camera[5] <<  endl;
+    cout << "   Scale u,v: " << camera[6] << ", " << camera[7] << endl;
+    cout << "   Offset u,v: " << camera[8] << ", " << camera[9] << endl;
+    cout << "   Distortion: " << camera[10] << ", " << camera[11] << endl;
 }
 
 void parseObj(const std::string& filePath,
               std::vector<vec3>* xyzPtr,
               std::vector<vec2>* uvPtr,
               std::vector<index3>* indexPtr,
-              std::map<std::string, int>* materialIDsPtr,
-              std::map<int, std::string>* materialNamesPtr){
+              std::unordered_map<std::string, int>* materialIDsPtr,
+              std::unordered_map<int, std::string>* materialNamesPtr){
     using namespace std;
     ifstream in(filePath.c_str());
     xyzPtr->clear();
     uvPtr->clear();
     indexPtr->clear();
 
-    map<string, int>& materialIDs = *materialIDsPtr;
-    map<int, string>& materialNames = *materialNamesPtr;
+    unordered_map<string, int>& materialIDs = *materialIDsPtr;
+    unordered_map<int, string>& materialNames = *materialNamesPtr;
     int materialID = 0;
 
     while (in.good()){
@@ -149,17 +220,17 @@ void parseObj(const std::string& filePath,
             while (strStream.good()){
                 strStream >> word;
                 stringstream wordstream(word);
-                index3 mvvt;
-                mvvt.mid = materialID;
+                index3 matXyzUvIDs;
+                matXyzUvIDs.materialID = materialID;
                 char tempchars[1000];
                 wordstream.getline(tempchars, 1000, '/');
-                stringstream(tempchars) >> mvvt.vid;
+                stringstream(tempchars) >> matXyzUvIDs.xyzID;
                 wordstream.getline(tempchars, 1000, '/');
-                stringstream(tempchars) >> mvvt.vtid;
-                if (mvvt.vtid == 0){
-                    mvvt.vtid = mvvt.vid;
+                stringstream(tempchars) >> matXyzUvIDs.uvID;
+                if (matXyzUvIDs.uvID == 0){
+                    matXyzUvIDs.uvID = matXyzUvIDs.xyzID;
                 }
-                indexPtr->push_back(mvvt);
+                indexPtr->push_back(matXyzUvIDs);
             }
         }
 
@@ -184,14 +255,14 @@ void createUvxyzLists (const std::vector <vec3>& xyzList,
     vec3 xyz;
     vec2 uv;
     vec5 uvxyz;
-    index3 mvvt;
+    index3 matXyzUvIDs;
     for (int i=0; i<uvxyzCount; i++){
-        mvvt = indexList[i];
-        uv = uvList[mvvt.vtid-1];
-        xyz = xyzList[mvvt.vid-1];
+        matXyzUvIDs = indexList[i];
+        uv = uvList[matXyzUvIDs.uvID-1];
+        xyz = xyzList[matXyzUvIDs.xyzID-1];
         uvxyz.x = xyz.x; uvxyz.y = xyz.y; uvxyz.z = xyz.z;
         uvxyz.u = uv.u; uvxyz.v = uv.v;
-        arrayOfVectors[mvvt.mid].push_back(uvxyz);
+        arrayOfVectors[matXyzUvIDs.materialID].push_back(uvxyz);
     }
 }
 
@@ -211,17 +282,19 @@ void outputFile(const double* camera, std::string materialName){
     ofstream file;
     file.open(materialName + ".yaml");
     file << "axisAngle: [" << camera[0] << ", "
-        << camera[1] << ", " << camera[2] << "] \n";
-    file << "translation: [" << camera[3] << ", "
-        << camera[4] << ", " << camera[5] << "] \n";
-    file << "scaleU : " << camera[6] << endl;
-    file << "scaleV : " << camera[7] << endl;
-    file << "offsetU : " << camera[8] << endl;
-    file << "offsetV : " << camera[9] << endl;
-    file << "K1 : " << camera[10] << endl;
-    file << "K2 : " << camera[11] << endl;
+         << camera[1] << ", " << camera[2] << "] \n"
+         << "translation: [" << camera[3] << ", "
+         << camera[4] << ", " << camera[5] << "] \n"
+         << "scaleU : " << camera[6] << endl
+         << "scaleV : " << camera[7] << endl
+         << "offsetU : " << camera[8] << endl
+         << "offsetV : " << camera[9] << endl
+         << "K1 : " << camera[10] << endl
+         << "K2 : " << camera[11] << endl;
     double col0[3], col1[3], col2[3];
-    double x[3] = {1,0,0}; double y[3] = {0,1,0}; double z[3] = {0,0,1};
+    double x[3] = {1,0,0};
+    double y[3] = {0,1,0};
+    double z[3] = {0,0,1};
     ceres::AngleAxisRotatePoint(camera, x, col0);
     ceres::AngleAxisRotatePoint(camera, y, col1);
     ceres::AngleAxisRotatePoint(camera, z, col2);
