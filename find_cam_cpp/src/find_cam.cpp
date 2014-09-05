@@ -97,13 +97,15 @@ struct UVResidual {
         p[0] += camera[3];
         p[1] += camera[4];
         p[2] += camera[5];
-        // multiply p by calibration matrix and divide by p[2]
-        p[0] = p[0]*camera[6]/p[2] + camera[8];
-        p[1] = p[1]*camera[7]/p[2] + camera[9];
-        // apply distortion
+        // divide by p[2] and apply distortion
+        p[0] = p[0]/p[2];
+        p[1] = p[1]/p[2];
         T rsqrd = p[0]*p[0] + p[1]*p[1];
         p[0] = p[0] + p[0]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
         p[1] = p[1] + p[1]*(camera[10]*rsqrd + camera[11]*rsqrd*rsqrd);
+        // multiply by camera calibration matrix
+        p[0] = p[0]*camera[6] + camera[8];
+        p[1] = p[1]*camera[7] + camera[9];
     	residuals[0] = p[0] - T(u_);
 	    residuals[1] = p[1] - T(v_);
         return true;

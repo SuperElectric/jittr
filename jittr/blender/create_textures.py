@@ -21,17 +21,19 @@ def read_mtl(object):
                 textures.append(current_texture)
     return list(zip(materials, textures))
 
-def xyz_to_uv(matrix, K1, K2, aspect, xyz1_array):
+def xyz_to_uv(xyz1_array, RT_matrix, calib_matrix, K1, K2):
     xyz1_array = numpy.swapaxes(xyz1_array, 0, 1)
-    uvz_array = numpy.dot(matrix, xyz1_array)
-    uv_aspect_array = numpy.dot(numpy.diag([aspect, 1.0]),
-                                numpy.divide(uvz_array[:2], uvz_array[2]))
+    uvz_array = numpy.dot(RT_matrix, xyz1_array)
+    uv_array = numpy.array([numpy.divide(uvz_array[0], uvz_array[2]),
+                            numpy.divide(uvz_array[1], uvz_array[2])])
     r_sqrd_array = numpy.einsum(
-        'ij,ij->j', uv_aspect_array, uv_aspect_array)
+        'ij,ij->j', uv_array, uv_array)
     r_to4_array = numpy.einsum('i,i->i', r_sqrd_array, r_sqrd_array)
-    uv_aspect_array += numpy.multiply((K1*r_sqrd_array + K2*r_to4_array),
-                                      uv_aspect_array)
-    uv_array = numpy.dot(numpy.diag([1/aspect, 1.0]), uv_aspect_array)
+    uv_array += numpy.multiply((K1*r_sqrd_array + K2*r_to4_array),
+                                      uv_array)
+    u_scale, v_scale, u0, v0  = [calib_matrix[0][0], calib_matrix[1][1],
+                                 calib_matrix[0][2], calib_matrix[1][2]]
+    uv_array = numpy.array([u0 + u_scale*uv_array[0], v0 + v_scale*uv_array[1]])
     uv_array = numpy.swapaxes(uv_array, 0, 1)
     return uv_array
 
@@ -40,13 +42,16 @@ def main(render, material_set):
     
     object = bpy.context.active_object
     
-    # Make sure required material, texture, bake image, and locationEmpty all exist
+    # Make sure required material, texture, bake image, and locationLamp all exist
     # and are set up correctly
     
     # Set renderer to Blender internal
     if bpy.context.mode == 'EDIT_MESH':
         bpy.ops.object.editmode_toggle()
     bpy.context.scene.render.engine = 'BLENDER_RENDER'
+    # Check mtl custom property exists, and if not, use default name
+    if "mtl_file" not in object.data:
+        object.data["mtl_file"] = "/home/daniel/urop/jittr/modelfiles/%s/%s_raw.mtl" % (object.name, object.name)
     # remove all object material slots (not completely necessary, so might change)
     for material_slot in object.material_slots:
         bpy.ops.object.material_slot_remove()
@@ -77,15 +82,20 @@ def main(render, material_set):
     # create bake image
     if "bake_image" not in bpy.data.images:
         bpy.data.images.new("bake_image", 1024, 1024)
-    # create locationEmpty (the reconstructed camera location)
-    if "locationEmpty" not in bpy.data.objects:
-        bpy.ops.object.empty_add()
-        bpy.data.objects[-1].name = "locationEmpty"
-        bpy.data.objects["locationEmpty"].parent = object
-        bpy.data.objects["locationEmpty"].scale = [10,10,10]
+    # create locationLamp (the reconstructed camera location)
+    if "locationLamp" not in bpy.data.objects:
+        bpy.ops.object.lamp_add(type='POINT')
+        bpy.context.active_object.name = "locationLamp"
+        bpy.data.objects["locationLamp"].parent = object
+        bpy.data.objects["locationLamp"].data.falloff_type = "CONSTANT"
+        bpy.data.objects["locationLamp"].data.shadow_method = "RAY_SHADOW"
+        bpy.data.objects["locationLamp"].data.shadow_ray_samples = 4
+        bpy.data.objects["locationLamp"].data.shadow_soft_size = 0
+        bpy.data.objects["locationLamp"].data.shadow_ray_sample_method = "CONSTANT_QMC"
+        # bpy.data.objects["locationLamp"].scale = [10,10,10]
         bpy.ops.object.select_all(action='DESELECT')
         bpy.context.scene.objects.active = object
-        object.select = True    
+        object.select = True
     # Make sure that the relevant UVmaps, textures, materials etc are selected/active
     # where necessary
     bpy.data.textures["temp_texture"].type  = "IMAGE"
@@ -164,22 +174,21 @@ def main(render, material_set):
             rot_matrix = numpy.array(doc['rotationMatrix'])
             translation = numpy.array(doc['translation'])
             cam_loc = -numpy.dot(rot_matrix.transpose(), translation)
-            project_matrix = numpy.insert(rot_matrix, 3, values=translation,
+            RT_matrix = numpy.insert(rot_matrix, 3, values=translation,
                                           axis=1)
             u0, v0 = doc['offsetU'], doc['offsetV']
             uScale, vScale = doc['scaleU'], doc['scaleV']
             calib_matrix = numpy.array([[uScale, 0.0   , u0 ],
                                         [0.0   , vScale, v0 ],
                                         [0.0   , 0.0   , 1.0]])
-            project_matrix = numpy.dot(calib_matrix, project_matrix)
-            return [K1, K2, project_matrix, cam_loc]  
-        K1, K2, project_matrix, camera_location = read_yaml_file(yaml_file)
+            return [RT_matrix, calib_matrix, K1, K2, cam_loc] 
+        RT_matrix, calib_matrix, K1, K2, camera_location = read_yaml_file(yaml_file)
         #K1, K2, project_matrix = read_numpy_file(numpy_file)
         
-        # Move empty called 'locationEmpty' to the correct position
+        # Move empty called 'locationLamp' to the correct position
         bpy.context.scene.frame_current = materialID
-        bpy.data.objects['locationEmpty'].location = camera_location
-        bpy.data.objects['locationEmpty'].keyframe_insert(data_path='location',
+        bpy.data.objects['locationLamp'].location = camera_location
+        bpy.data.objects['locationLamp'].keyframe_insert(data_path='location',
             frame=materialID)
             
 
@@ -196,8 +205,7 @@ def main(render, material_set):
                     xyz.append(1.0)
                     xyz1_list.append(xyz)
             xyz1_array = numpy.array(xyz1_list)
-            uv_array = xyz_to_uv(
-                project_matrix, K1, K2, aspect_ratio, xyz1_array)
+            uv_array = xyz_to_uv(xyz1_array, RT_matrix, calib_matrix, K1, K2)
             index = 0
             for f in bm.faces:
                 for l in f.loops:
@@ -212,18 +220,13 @@ def main(render, material_set):
             object.data.uv_textures['UVnew'].active = True
 
             # Bake image
-            bpy.context.scene.render.bake_type = 'TEXTURE'
+            bpy.context.scene.render.bake_type = 'FULL'
             bpy.ops.object.bake_image() 
             bpy.data.images['bake_image'].save_render(
                 filepath='%s/unwrapped/%s.png' % (location, material))
 
 if __name__ == "__main__":
-    material_set = range(0,16)
+    material_set = range(0,11)
     main(True, material_set)
-
-
-
-
-
 
 
