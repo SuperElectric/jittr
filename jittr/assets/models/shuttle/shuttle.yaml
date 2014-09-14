@@ -1,0 +1,5 @@
+model3dFile: "shuttle.obj"
+texture: "shuttle.png"
+offset: [0,0,0]
+scale: 0.1
+rotation: [0,0,0]

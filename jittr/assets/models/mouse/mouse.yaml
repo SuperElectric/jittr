@@ -1,0 +1,5 @@
+model3dFile: mouse.obj
+texture: mouse.png
+offset: [0,0,0]
+scale: 0.05
+rotation: [0,90,0]

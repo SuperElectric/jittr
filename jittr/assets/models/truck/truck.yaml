@@ -1,0 +1,5 @@
+model3dFile: truck.obj
+texture: merged.png
+rotation: [0,90,0]
+scale: 0.4
+offset: [0,0,-0.1]
