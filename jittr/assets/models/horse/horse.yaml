@@ -1,0 +1,7 @@
+modelFile: "horse.obj"
+blendFile: "horse.blend"
+useBlendFile: Yes
+texture: "horse.png"
+offset: [0,0,-0.1]
+scale: 0.3
+rotation: [0,90,0]

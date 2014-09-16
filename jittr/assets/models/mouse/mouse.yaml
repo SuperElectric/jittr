@@ -1,4 +1,6 @@
-model3dFile: mouse.obj
+modelFile: mouse.obj
+blendFile: mouse.blend
+useBlendFile: Yes
 texture: mouse.png
 offset: [0,0,0]
 scale: 0.05

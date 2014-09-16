@@ -4,6 +4,7 @@ import argparse
 import numpy
 import yaml
 import sys
+import os
 from math import sin, cos, pi
 try:
     import bpy
@@ -14,6 +15,9 @@ except ImportError:
                               PointLight)
     from direct.showbase.ShowBase import ShowBase
     usingBlender = False
+
+JITTR_DIR = os.environ['JITTR_DIR'].rstrip(' ').rstrip('/')
+
 
 class scene(object):
     def loadModels(self):
@@ -35,7 +39,57 @@ class scene(object):
 
 
 class blenderScene(scene):
-    pass
+
+    def __init__(self, settings):
+        self.settings = settings
+        self.models = []
+        if 'Camera' not in bpy.data.objects:
+            bpy.ops.object.camera_add()
+        self.camera = bpy.data.objects['Camera']
+        width, height = self.settings.width, self.settings.height
+        bpy.data.scenes['Scene'].render.resolution_x = self.settings.width
+        bpy.data.scenes['Scene'].render.resolution_y = self.settings.height
+        if (width < height):
+            self.camera.data.sensor_width = float(height) / float(width)
+        else:
+            self.camera.data.sensor_width = 1.0
+
+    def loadModels(self):
+        for modelData in self.settings.modelDatas:
+            if modelData.name not in bpy.data.objects:
+                if modelData.useBlendFile:
+                    bpy.ops.wm.link_append(
+                        directory="%s/assets/models/%s/%s/Object/"
+                        % (JITTR_DIR, modelData.name, modelData.blendFile),
+                        filename=modelData.name,
+                        link=False)
+            self.models.append(bpy.data.objects[modelData.name])
+
+    def loadLighting(self):
+        pass
+
+    def setLighting(self, lightingID):
+        pass
+
+    def setCameraState(self, azID, elevID, cameraPositions):
+        self.camera.location = [cameraPositions[azID, elevID, 0],
+                                cameraPositions[azID, elevID, 1],
+                                cameraPositions[azID, elevID, 2]]
+        self.camera.rotation_euler = [pi*(90-self.elevations[elevID])/180,
+                                      0,
+                                      pi*(90+self.azimuths[azID])/180]
+
+    def setBackgroundImage(self, backID):
+        pass
+
+    def showModel(self, modelID):
+        self.models[modelID].hide = False
+
+    def hideModel(self, modelID):
+        self.models[modelID].hide = True
+
+    def renderToArray(self):
+        return numpy.zeros((self.settings.height, self.settings.width, 3))
 
 
 class pandaScene(scene):
@@ -46,7 +100,7 @@ class pandaScene(scene):
                                                 self.settings.height))
         self.base = ShowBase()
         self.base.mouseInterface.detachNode()
-        self.base.models = []
+        self.models = []
         self.base.plight = PointLight('plight')
         self.base.plnp = self.base.render.attachNewNode(self.base.plight)
         self.base.camLens.setFocalLength(self.settings.cameraFocalLength)
@@ -55,11 +109,11 @@ class pandaScene(scene):
 
     def loadModels(self):
         for modelData in self.settings.modelDatas:
-            model = self.base.loader.loadModel("../assets/models/%s/%s" % (
-                modelData.name, modelData.model3dFile))
-            texture = self.base.loader.loadTexture("../assets/models/%s/%s" % (
-                modelData.name, modelData.texture))
-            self.base.models.append(model)
+            model = self.base.loader.loadModel("%s/assets/models/%s/%s" % (
+                JITTR_DIR, modelData.name, modelData.modelFile))
+            texture = self.base.loader.loadTexture("%s/assets/models/%s/%s" % (
+                JITTR_DIR, modelData.name, modelData.texture))
+            self.models.append(model)
             model.setTexture(texture)
             m = modelData
             model.setPos(m.offset[0], m.offset[1], m.offset[2])
@@ -72,7 +126,7 @@ class pandaScene(scene):
     def setLighting(self, lightingID):
         if self.settings.lightingPositions[lightingID] == "noLights":
             self.base.plight.setColor(VBase4(1, 1, 1, 1))
-            self.base.plnp.setPos(0, 0, 10)
+            self.base.plnp.setPos(10, 10, 10)
             self.base.render.setLight(self.base.plnp)
 
     def setCameraState(self, azID, elevID, cameraPositions):
@@ -88,11 +142,11 @@ class pandaScene(scene):
 
     def showModel(self, modelID):
         if modelID >= 0:
-            self.base.models[modelID].reparentTo(self.base.render)
+            self.models[modelID].reparentTo(self.base.render)
 
     def hideModel(self, modelID):
         if modelID >= 0:
-            self.base.models[modelID].removeNode()
+            self.models[modelID].removeNode()
 
     def renderToArray(self):
         self.base.graphicsEngine.renderFrame()
@@ -161,8 +215,8 @@ def parseSettings(args):
     result.modelDatas = []
 
     for model in result.models:
-        modelSettingsFile = open('../assets/models/%s/%s.yaml' %
-                                 (model, model), 'r')
+        modelSettingsFile = open('%s/assets/models/%s/%s.yaml' %
+                                 (JITTR_DIR, model, model), 'r')
         modelSettingsDictionary = yaml.load(modelSettingsFile)
         modelData = namespace()
         modelData.__dict__.update(modelSettingsDictionary)
@@ -172,9 +226,19 @@ def parseSettings(args):
 
 
 def parseArgs():
+    if usingBlender:
+        class namespace(object):
+            pass
+        result = namespace()
+        result.width = 0
+        result.height = 0
+        result.models = []
+        result.output = []
+        result.settings = "%s/render_settings.yaml" % JITTR_DIR
+        return result
     parser = argparse.ArgumentParser(
-        description='Generates norb data set of N .egg models and saves '
-        'renders as .npy arrays')
+        description='Generates norb data set of N models and saves '
+        'renders as .npy arrays (or just images if using blender)')
 
     parser.add_argument('--width',
                         type=int,
@@ -191,8 +255,8 @@ def parseArgs():
                         nargs='+',
                         default=[],
                         help='Names of models to render. Example: "--models '
-                        'cube" will use files ../assets/models/cube/cube.* if '
-                        'they exist')
+                        'cube" will use files in JITTR_DIR/assets/models/cube/'
+                        ' if they exist')
 
     parser.add_argument('-o',
                         '--output',
@@ -202,7 +266,7 @@ def parseArgs():
                         )
 
     parser.add_argument('--settings',
-                        default="../render_settings.yaml",
+                        default="%s/render_settings.yaml" % JITTR_DIR,
                         help="The render settings file")
     result = parser.parse_args()
     return result
