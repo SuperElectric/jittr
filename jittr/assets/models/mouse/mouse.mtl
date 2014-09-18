@@ -1,12 +1,12 @@
-# Blender MTL File: 'None'
+# Blender MTL File: 'create_textures.blend'
 # Material Count: 1
 
-newmtl temp_material
-Ns 96.078431
+newmtl materialTemp
+Ns 194.117647
 Ka 0.000000 0.000000 0.000000
-Kd 1.000000 1.000000 1.000000
-Ks 0.000000 0.000000 0.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
-illum 1
-map_Kd mouse.png
+illum 2
+map_Kd /home/daniel/urop/jittr/jittr/assets/models/mouse/combined3.png

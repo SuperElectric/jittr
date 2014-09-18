@@ -1,5 +1,5 @@
 # values used only if relevant command line arguments are not given to the dataset generator
-models: [shuttle, horse, mouse, truck]
+models: [shuttle] #[shuttle, horse, mouse, truck]
 width: 1000
 height: 1000
 output: ["../outputs/images.npy", "../outputs/labels.npy"]
@@ -13,4 +13,4 @@ cameraFar: 1000.0
 cameraFocalLength: 1.0
 azimuths: [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340]
 elevations: [30, 35, 40, 45, 50, 55, 60, 65, 70]
-lightingPositions: ["noLights"]
+lightingPositions: ["nooLights"]

@@ -39,6 +39,8 @@ class scene(object):
 
 
 class blenderScene(scene):
+    
+    n = 0
 
     def __init__(self, settings):
         self.settings = settings
@@ -59,11 +61,18 @@ class blenderScene(scene):
             if modelData.name not in bpy.data.objects:
                 if modelData.useBlendFile:
                     bpy.ops.wm.link_append(
-                        directory="%s/assets/models/%s/%s/Object/"
+                        directory="%s/jittr/assets/models/%s/%s/Object/"
                         % (JITTR_DIR, modelData.name, modelData.blendFile),
                         filename=modelData.name,
                         link=False)
-            self.models.append(bpy.data.objects[modelData.name])
+            model = bpy.data.objects[modelData.name]
+            self.models.append(model)
+            model.hide = True
+            model.keyframe_insert(data_path = "hide", frame=0)
+            m = modelData
+            model.location = [m.offset[0], m.offset[1], m.offset[2]]
+            model.scale = [m.scale, m.scale, m.scale]
+            model.rotation_euler = [m.rotation[0], m.rotation[1], m.rotation[2]]
 
     def loadLighting(self):
         pass
@@ -75,18 +84,22 @@ class blenderScene(scene):
         self.camera.location = [cameraPositions[azID, elevID, 0],
                                 cameraPositions[azID, elevID, 1],
                                 cameraPositions[azID, elevID, 2]]
-        self.camera.rotation_euler = [pi*(90-self.elevations[elevID])/180,
+        self.camera.rotation_euler = [pi*(90-self.settings.elevations[elevID])/180,
                                       0,
-                                      pi*(90+self.azimuths[azID])/180]
+                                      pi*(90+self.settings.azimuths[azID])/180]
+        self.camera.keyframe_insert(data_path = "location", frame = self.n)
+        self.camera.keyframe_insert(data_path = "rotation_euler", frame = self.n)
 
     def setBackgroundImage(self, backID):
         pass
 
     def showModel(self, modelID):
         self.models[modelID].hide = False
+        self.models[modelID].keyframe_insert(data_path = "hide", frame = self.n)
 
     def hideModel(self, modelID):
         self.models[modelID].hide = True
+        self.models[modelID].keyframe_insert(data_path = "hide", frame = self.n)
 
     def renderToArray(self):
         return numpy.zeros((self.settings.height, self.settings.width, 3))
@@ -109,9 +122,9 @@ class pandaScene(scene):
 
     def loadModels(self):
         for modelData in self.settings.modelDatas:
-            model = self.base.loader.loadModel("%s/assets/models/%s/%s" % (
+            model = self.base.loader.loadModel("%s/jittr/assets/models/%s/%s" % (
                 JITTR_DIR, modelData.name, modelData.modelFile))
-            texture = self.base.loader.loadTexture("%s/assets/models/%s/%s" % (
+            texture = self.base.loader.loadTexture("%s/jittr/assets/models/%s/%s" % (
                 JITTR_DIR, modelData.name, modelData.texture))
             self.models.append(model)
             model.setTexture(texture)
@@ -215,7 +228,7 @@ def parseSettings(args):
     result.modelDatas = []
 
     for model in result.models:
-        modelSettingsFile = open('%s/assets/models/%s/%s.yaml' %
+        modelSettingsFile = open('%s/jittr/assets/models/%s/%s.yaml' %
                                  (JITTR_DIR, model, model), 'r')
         modelSettingsDictionary = yaml.load(modelSettingsFile)
         modelData = namespace()
@@ -234,7 +247,7 @@ def parseArgs():
         result.height = 0
         result.models = []
         result.output = []
-        result.settings = "%s/render_settings.yaml" % JITTR_DIR
+        result.settings = "%s/jittr/render_settings.yaml" % JITTR_DIR
         return result
     parser = argparse.ArgumentParser(
         description='Generates norb data set of N models and saves '
@@ -255,7 +268,7 @@ def parseArgs():
                         nargs='+',
                         default=[],
                         help='Names of models to render. Example: "--models '
-                        'cube" will use files in JITTR_DIR/assets/models/cube/'
+                        'cube" will use files in JITTR_DIR/jittr/assets/models/cube/'
                         ' if they exist')
 
     parser.add_argument('-o',
@@ -266,7 +279,7 @@ def parseArgs():
                         )
 
     parser.add_argument('--settings',
-                        default="%s/render_settings.yaml" % JITTR_DIR,
+                        default="%s/jittr/render_settings.yaml" % JITTR_DIR,
                         help="The render settings file")
     result = parser.parse_args()
     return result
@@ -325,7 +338,9 @@ def main():
                     labelsArray[n, 2] = elevationID
                     labelsArray[n, 3] = lightingID
                     imagesArray[n, :, :, :] = sc.renderToArray()
-                    n = n + 1
+                    n = n+1
+                    # sc.n is used for setting blender keyframes
+                    sc.n = n
 
     if not settings.dontSave:
         numpy.save(settings.output[0], imagesArray)
@@ -333,3 +348,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

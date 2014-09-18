@@ -1,7 +1,7 @@
 modelFile: mouse.obj
 blendFile: mouse.blend
 useBlendFile: Yes
-texture: mouse.png
-offset: [0,0,0]
-scale: 0.05
+texture: combined3.png
+offset: [0.15,0,0.25]
+scale: 0.5
 rotation: [0,90,0]
