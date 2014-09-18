@@ -48,6 +48,7 @@ class blenderScene(scene):
         if 'Camera' not in bpy.data.objects:
             bpy.ops.object.camera_add()
         self.camera = bpy.data.objects['Camera']
+        self.camera.data.lens = 1.0
         width, height = self.settings.width, self.settings.height
         bpy.data.scenes['Scene'].render.resolution_x = self.settings.width
         bpy.data.scenes['Scene'].render.resolution_y = self.settings.height
