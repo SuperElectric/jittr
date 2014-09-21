@@ -1,0 +1,7 @@
+modelFile: truck.obj
+blendFile: truck.blend
+useBlendFile: Yes
+texture: merged.png
+rotation: [0,90,0]
+scale: 0.4
+offset: [0,0,-0.1]

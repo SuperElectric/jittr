@@ -1,3 +1,16 @@
+Instructions:
+ Set environment variable "JITTR_DIR" to this directory
+ To run Panda3d version:
+  - run "make_dataset.py" outside of Blender
+  - or run "make_dataset.py --models truck shuttle mouse horse" for all 4 models
+ To run Blender version:
+  - Open "make_dataset.blend" and click "run"
+  - Click in 3d viewport and use arrow keys or press Alt+a to see camera positions change
+  - Press Numpad 0 to switch to camera view
+  - Press Shift+z to see rendered view 
+
+
+
 Jittr - Just In Time Training Renderer
 (Feel free to rename :) )
 

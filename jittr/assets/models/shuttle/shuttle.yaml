@@ -1,0 +1,7 @@
+modelFile: "shuttle.obj"
+blendFile: "shuttle.blend"
+useBlendFile: Yes
+texture: "shuttle.png"
+offset: [0,0,0]
+scale: 0.1
+rotation: [0,0,0]

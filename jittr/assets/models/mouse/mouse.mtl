@@ -1,32 +1,12 @@
-newmtl mouse_0
-map_Kd mouse_T1.jpg
-newmtl mouse_1
-map_Kd mouse_T2.jpg
-newmtl mouse_2
-map_Kd mouse_T3.jpg
-newmtl mouse_3
-map_Kd mouse_T4.jpg
-newmtl mouse_4
-map_Kd mouse_T5.jpg
-newmtl mouse_5
-map_Kd mouse_T6.jpg
-newmtl mouse_6
-map_Kd mouse_T7.jpg
-newmtl mouse_7
-map_Kd mouse_T8.jpg
-newmtl mouse_8
-map_Kd mouse_T9.jpg
-newmtl mouse_9
-map_Kd mouse_T10.jpg
-newmtl mouse_10
-map_Kd mouse_T11.jpg
-newmtl mouse_11
-map_Kd mouse_T12.jpg
-newmtl mouse_12
-map_Kd mouse_T13.jpg
-newmtl mouse_13
-map_Kd mouse_T14.jpg
-newmtl mouse_14
-map_Kd mouse_T15.jpg
-newmtl mouse_15
-map_Kd mouse_T16.jpg
+# Blender MTL File: 'create_textures.blend'
+# Material Count: 1
+
+newmtl materialTemp
+Ns 194.117647
+Ka 0.000000 0.000000 0.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd /home/daniel/urop/jittr/jittr/assets/models/mouse/combined3.png
