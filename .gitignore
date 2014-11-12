@@ -5,4 +5,7 @@
 find_cam_cpp/build/*
 jittr/assets/models/*/*.yaml
 jittr/assets/models/*/*.npy
+jittr/lego/renders/*
+jittr/lego/images
+jittr/lego/labels*
 
