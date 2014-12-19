@@ -13,7 +13,8 @@ void parseObj(const std::string& filePath,
               std::vector<vec2>* uvPtr,
               std::vector<index3>* indexPtr,
               std::unordered_map<std::string, int>* materialIDsPtr,
-              std::unordered_map<int, std::string>* materialNamesPtr);
+              std::unordered_map<int, std::string>* materialNamesPtr,
+              std::string& mtlFile);
 
 void createUvxyzLists (const std::vector <vec3>& xyzList,
                        const std::vector <vec2>& uvList,
@@ -24,6 +25,6 @@ void selectRandomVerts(const std::vector<vec5>& vectorOfVerts,
                        int nVerts,
                        vec5* arrayOfVerts);
 
-void outputFile(const double* camera, std::string materialName);
+std::string cameraDataToString(int indents, const double* camera, std::string materialName);
 void linearEstimateCamera(const vec5* const arrayOfVerts, int nVerts,
                           double* camera);

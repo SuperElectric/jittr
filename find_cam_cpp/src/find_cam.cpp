@@ -183,7 +183,8 @@ void parseObj(const std::string& filePath,
               std::vector<vec2>* uvPtr,
               std::vector<index3>* indexPtr,
               std::unordered_map<std::string, int>* materialIDsPtr,
-              std::unordered_map<int, std::string>* materialNamesPtr){
+              std::unordered_map<int, std::string>* materialNamesPtr,
+              std::string& mtlFile){
     using namespace std;
     ifstream in(filePath.c_str());
     xyzPtr->clear();
@@ -246,6 +247,10 @@ void parseObj(const std::string& filePath,
             }
             materialID = materialIDs[material];
         }
+        
+        else if (firstWord == "mtllib"){
+            strStream >> mtlFile;
+        }
     }
 }
 
@@ -279,20 +284,24 @@ void selectRandomVerts(const std::vector<vec5>& vectorOfVerts,
     }
 }
 
-void outputFile(const double* camera, std::string materialName){
+std::string cameraDataToString(int indents, const double* camera,
+                               std::string materialName){
     using namespace std;
-    ofstream file;
-    file.open(materialName + ".yaml");
-    file << "axisAngle: [" << camera[0] << ", "
-         << camera[1] << ", " << camera[2] << "] \n"
-         << "translation: [" << camera[3] << ", "
-         << camera[4] << ", " << camera[5] << "] \n"
-         << "scaleU : " << camera[6] << endl
-         << "scaleV : " << camera[7] << endl
-         << "offsetU : " << camera[8] << endl
-         << "offsetV : " << camera[9] << endl
-         << "K1 : " << camera[10] << endl
-         << "K2 : " << camera[11] << endl;
+    stringstream data;
+    string indentString = "";
+    for (int i=0; i<indents; i++){
+        indentString = indentString + "    ";
+    }
+    data << indentString << "axisAngle: [" << camera[0] << ", "
+         << indentString << camera[1] << ", " << camera[2] << "] \n"
+         << indentString << "translation: [" << camera[3] << ", "
+         << indentString << camera[4] << ", " << camera[5] << "] \n"
+         << indentString << "scaleU : " << camera[6] << endl
+         << indentString << "scaleV : " << camera[7] << endl
+         << indentString << "offsetU : " << camera[8] << endl
+         << indentString << "offsetV : " << camera[9] << endl
+         << indentString << "K1 : " << camera[10] << endl
+         << indentString << "K2 : " << camera[11] << endl;
     double col0[3], col1[3], col2[3];
     double x[3] = {1,0,0};
     double y[3] = {0,1,0};
@@ -300,9 +309,10 @@ void outputFile(const double* camera, std::string materialName){
     ceres::AngleAxisRotatePoint(camera, x, col0);
     ceres::AngleAxisRotatePoint(camera, y, col1);
     ceres::AngleAxisRotatePoint(camera, z, col2);
-    file << "rotationMatrix: [["
+    data << indentString << "rotationMatrix: [["
          << col0[0] << ", " << col1[0] << ", " << col2[0] << "], ["
          << col0[1] << ", " << col1[1] << ", " << col2[1] << "], ["
-         << col0[2] << ", " << col1[2] << ", " << col2[2] << "]]";
-    file.close();
+         << col0[2] << ", " << col1[2] << ", " << col2[2] << "]]"
+         << endl;
+    return data.str();
 }
