@@ -40,14 +40,22 @@ int main(int argc, char* argv[]) {
     unordered_map<string, int> materialIDs;
     unordered_map<int, string> materialNames;
     string file = argv[1];
-    parseObj(file, &xyzList, &uvList, &indexList, &materialIDs, &materialNames);
+    string mtlFile;
+    parseObj(file, &xyzList, &uvList, &indexList, &materialIDs, &materialNames,
+             mtlFile);
     vector<vec5>* arrayOfVectors = new vector<vec5> [materialIDs.size()];
     createUvxyzLists(xyzList, uvList, indexList, arrayOfVectors);
         
     int materialIDMax;
     stringstream(argv[2]) >> materialIDMax;
-    cout << endl << "Using materials 0 to " << materialIDMax-1 << endl << endl;
-    if (materialIDMax > materialIDs.size()){
+    if (materialIDMax != 0){
+        cout << endl << "Using materials 0 to " << materialIDMax-1 << endl
+        << endl;
+    }
+    if (materialIDMax == 0){
+        materialIDMax = materialIDs.size();
+    }
+    else if (materialIDMax > materialIDs.size()){
         cout << "Material index is too high" << endl;
         return 1;
     }
@@ -57,6 +65,10 @@ int main(int argc, char* argv[]) {
                               -14.5,55.0,-189.2,
                               -1.77,-1.33,0.54,0.50,
                                0.012,-0.0029};
+
+    ofstream outputFile;
+    outputFile.open(string(argv[1]) + ".yaml");
+    outputFile << "mtlFile: " << mtlFile << endl << endl;
 
     for (int materialID=0; materialID<materialIDMax; materialID++){
         vec5* arrayOfVerts = new vec5 [nVerts];
@@ -70,8 +82,11 @@ int main(int argc, char* argv[]) {
         cout << "  Final camera is: " << endl;
         printCamera(cameraGuess);
         cout << endl;
-        outputFile(cameraGuess, materialNames[materialID]);
+        outputFile << materialNames[materialID] << ":" << endl
+             << cameraDataToString(1, cameraGuess, materialNames[materialID])
+             << endl;
     }
+    outputFile.close();
 
     delete[] arrayOfVectors;    
 
