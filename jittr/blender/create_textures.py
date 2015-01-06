@@ -1,6 +1,9 @@
 import bpy, bmesh, numpy, yaml
 import matplotlib.image as mpimg
 
+# set JITTR_DIR
+JITTR_DIR = "/home/daniel/urop/jittr"
+
 def read_mtl(object):
     # returns list of (material, image) pairs
     mtl_file = object.data['mtl_file']
@@ -73,7 +76,7 @@ def main(object, render=True, blend_textures=True, material_set=[]):
     bpy.context.scene.render.engine = 'BLENDER_RENDER'
     # Check mtl custom property exists, and if not, use default name
     if 'mtl_file' not in object.data:
-        object.data['mtl_file'] = '%s/%s_raw.mtl' % (object.name, object.name)
+        object.data['mtl_file'] = '%s/modelfiles/%s/%s_raw.mtl' % (JITTR_DIR ,object.name, object.name)
     # remove all object material slots (not completely necessary, so might change)
     for material_slot in object.material_slots:
         bpy.ops.object.material_slot_remove()
@@ -190,9 +193,10 @@ def main(object, render=True, blend_textures=True, material_set=[]):
         object.data.uv_textures['UVold'].active = True
 
         # read yaml file
-        yaml_file = '%s%s.yaml' % (location, material)
-        def read_yaml_file(filePath):
+        yaml_file = '%s%s_raw.obj.yaml' % (location, object.name)
+        def read_from_yaml_file(filePath, materialName):
             doc = yaml.load(open(filePath));
+            doc = doc[materialName]
             K1 = doc['K1']
             K2 = doc['K2']
             rot_matrix = numpy.array(doc['rotationMatrix'])
@@ -206,7 +210,7 @@ def main(object, render=True, blend_textures=True, material_set=[]):
                                         [0.0   , vScale, v0 ],
                                         [0.0   , 0.0   , 1.0]])
             return [RT_matrix, calib_matrix, K1, K2, cam_loc] 
-        RT_matrix, calib_matrix, K1, K2, camera_location = read_yaml_file(yaml_file)
+        RT_matrix, calib_matrix, K1, K2, camera_location = read_from_yaml_file(yaml_file, material)
         
         # Move lamp called 'locationLamp' to the correct position
         bpy.context.scene.frame_current = materialID
@@ -263,10 +267,12 @@ def main(object, render=True, blend_textures=True, material_set=[]):
         colour_array, weight_array = open_as_arrays(colour_texture_list, weight_texture_list)
         blended_image = blend_soft_max(colour_array, weight_array, 10.0)
         mpimg.imsave('%sunwrapped/merged.png' % location, blended_image)
+        
 
 
 if __name__ == "__main__":
     object = bpy.context.active_object
     main(object, render=True, blend_textures=True)
+
 
 

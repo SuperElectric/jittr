@@ -48,7 +48,10 @@ int main(int argc, char* argv[]) {
         
     int materialIDMax;
     stringstream(argv[2]) >> materialIDMax;
-    cout << endl << "Using materials 0 to " << materialIDMax-1 << endl << endl;
+    if (materialIDMax != 0){
+        cout << endl << "Using materials 0 to " << materialIDMax-1 << endl
+        << endl;
+    }
     if (materialIDMax == 0){
         materialIDMax = materialIDs.size();
     }

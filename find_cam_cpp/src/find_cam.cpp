@@ -292,6 +292,13 @@ std::string cameraDataToString(int indents, const double* camera,
     for (int i=0; i<indents; i++){
         indentString = indentString + "    ";
     }
+    double col0[3], col1[3], col2[3];
+    double x[3] = {1,0,0};
+    double y[3] = {0,1,0};
+    double z[3] = {0,0,1};
+    ceres::AngleAxisRotatePoint(camera, x, col0);
+    ceres::AngleAxisRotatePoint(camera, y, col1);
+    ceres::AngleAxisRotatePoint(camera, z, col2);
     data << indentString << "axisAngle: [" << camera[0] << ", "
          << indentString << camera[1] << ", " << camera[2] << "] \n"
          << indentString << "translation: [" << camera[3] << ", "
@@ -301,15 +308,8 @@ std::string cameraDataToString(int indents, const double* camera,
          << indentString << "offsetU : " << camera[8] << endl
          << indentString << "offsetV : " << camera[9] << endl
          << indentString << "K1 : " << camera[10] << endl
-         << indentString << "K2 : " << camera[11] << endl;
-    double col0[3], col1[3], col2[3];
-    double x[3] = {1,0,0};
-    double y[3] = {0,1,0};
-    double z[3] = {0,0,1};
-    ceres::AngleAxisRotatePoint(camera, x, col0);
-    ceres::AngleAxisRotatePoint(camera, y, col1);
-    ceres::AngleAxisRotatePoint(camera, z, col2);
-    data << indentString << "rotationMatrix: [["
+         << indentString << "K2 : " << camera[11] << endl
+         << indentString << "rotationMatrix: [["
          << col0[0] << ", " << col1[0] << ", " << col2[0] << "], ["
          << col0[1] << ", " << col1[1] << ", " << col2[1] << "], ["
          << col0[2] << ", " << col1[2] << ", " << col2[2] << "]]"
