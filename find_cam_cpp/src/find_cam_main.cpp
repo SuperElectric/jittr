@@ -19,13 +19,13 @@ bool exists (const std::string& name) {
     } else {
         f.close();
         return false;
-    }   
+    }
 }
 
 int main(int argc, char* argv[]) {
 
     if (argc != 3){
-        cout << "Usage: find_cam <.obj file> <material count>" << endl;        
+        cout << "Usage: find_cam <.obj file> <material count>" << endl;
         return 1;
     }
     if (!exists(argv[1])){
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
         cout << argv[1] <<" not found." << endl;
         return 1;
     }
-    
+
     vector <vec3> xyzList;
     vector <vec2> uvList;
     vector <index3> indexList;
@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
     parseObj(file, &xyzList, &uvList, &indexList, &materialIDs, &materialNames);
     vector<vec5>* arrayOfVectors = new vector<vec5> [materialIDs.size()];
     createUvxyzLists(xyzList, uvList, indexList, arrayOfVectors);
-        
+
     int materialIDMax;
     stringstream(argv[2]) >> materialIDMax;
     cout << endl << "Using materials 0 to " << materialIDMax-1 << endl << endl;
@@ -63,8 +63,8 @@ int main(int argc, char* argv[]) {
         selectRandomVerts(arrayOfVectors[materialID], nVerts, arrayOfVerts);
         linearEstimateCamera(arrayOfVerts, 40, cameraGuess);
         cout << "Material = " << materialNames[materialID] << endl;
-        cout << "  Camera estimate is: " << endl;        
-        printCamera(cameraGuess);     
+        cout << "  Camera estimate is: " << endl;
+        printCamera(cameraGuess);
         solveCamera(arrayOfVerts, nVerts, cameraGuess);
         delete[] arrayOfVerts;
         cout << "  Final camera is: " << endl;
@@ -73,14 +73,7 @@ int main(int argc, char* argv[]) {
         outputFile(cameraGuess, materialNames[materialID]);
     }
 
-    delete[] arrayOfVectors;    
+    delete[] arrayOfVectors;
 
     return 0;
 }
-
-
-
-
-
-
-
