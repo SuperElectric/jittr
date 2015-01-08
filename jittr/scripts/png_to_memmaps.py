@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import argparse
 from matplotlib.image import imread
 import numpy
@@ -10,7 +12,8 @@ def main():
     def parse_args():
         parser = argparse.ArgumentParser(
             description=("Merges .pngs into a memmappable .npy file, and "
-                         " generates corrsponding NORB labels."))
+                         " generates corrsponding NORB labels as another "
+                         ".npy file."))
 
         parser.add_argument("-i",
                             "--input_directory",
@@ -86,22 +89,6 @@ def main():
             print "read %d of %d" % (file_number + 1, num_files)
 
         labels[file_number, :] = get_norb_label(file_number)
-
-
-# def make_labels(filename='labels'):
-#     labels = numpy.memmap(filename,
-#                           dtype='int32',
-#                           mode='w+',
-#                           shape=(num_files, 5))
-
-#     for i in range(num_files):
-#         light = (i / 972)
-#         model = (i / 162) % 6
-#         elev = (i / 18) % 9
-#         azim = i % 18
-#         labels[i][:] = [0, model, elev, azim, light]
-
-#     return labels
 
 
 if __name__ == '__main__':
