@@ -50,10 +50,10 @@ def main():
                          mode='w+',
                          shape=(num_files, ) + image_shape)
 
-    labels = numpy.memmap('%s_labels.npy' % args.output_prefix,
-                          dtype='int32',
-                          mode='w+',
-                          shape=(num_files, 5))
+    labels = open_memmap('%s_labels.npy' % args.output_prefix,
+                         dtype='int32',
+                         mode='w+',
+                         shape=(num_files, 5))
 
     image_prefix = os.path.join(args.input_directory, args.image_prefix)
 
@@ -62,19 +62,19 @@ def main():
         assert file_number <= num_files
 
         if (file_number < 10):
-            return "./%s000%d.png" % (image_prefix, file_number)
+            return "%s000%d.png" % (image_prefix, file_number)
         elif (file_number < 100):
-            return "./%s00%d.png" % (image_prefix, file_number)
+            return "%s00%d.png" % (image_prefix, file_number)
         elif (file_number < 1000):
-            return "./%s0%d.png" % (image_prefix, file_number)
+            return "%s0%d.png" % (image_prefix, file_number)
         else:
-            return "./%s%d.png" % (image_prefix, file_number)
+            return "%s%d.png" % (image_prefix, file_number)
 
     def get_norb_label(file_number):
         light = (file_number / 972)
         model = (file_number / 162) % 6
         elev = (file_number / 18) % 9
-        azim = file_number % 18
+        azim = (file_number % 18) * 2
 
         return numpy.asarray([0, model, elev, azim, light], dtype='int32')
 
