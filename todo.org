@@ -1,5 +1,8 @@
+* Replace hard-coded filepath in create_textures.py with an environment variable (e.g. JITTR_DIR).
 * Get texturing script to select the merged.png texture, and:
 ** Pack it into the blend file
 ** Export a corrected.obj file and copy the merged.png file alongside it
 ** Edit corrected.mtl so that the texture file path points to the merged.png
 * Modify the "rendering script" (the .blend file for rendering datasets) so that it's easier to add new objects to it.
+** Change setup so that it repeats the same camera/object animation for each object
+** Modify python script (png->memmap) to match the # of lighting/elevaitons/azimuths.
