@@ -1,0 +1,67 @@
+* Scan model with ScanStudio HD
+** Scan at least 2 360 loops
+*** Multiple loops needed, with the object positioned differently on the turntable, since the object regions tangent to the laser beam don't get scanned properly and become holes.
+*** Set # of scans per loop to max (16). --> each loop will take an hour.
+** Align the N models (one per loop) in ScanStudio 3D by placing pins.
+** Fuse the scans together using the "fuse" button. This will create an N+1'th model alongside the existing models, that's a fusion of all the scans.
+** You can try hole-filling tool at the top.
+*** The hole-filling functionality can be pretty disasterous so make sure you save backups beforehand if you decide to play with that.
+*** It might be best to just defer hole-filling to blender (see "Clean up the mesh" step below).
+** Export two models
+*** Export the fused model
+**** Show just the fused model (drag the non-fused models out of the green region at the bottom of the UI).
+**** Click the 'output' button at the top of the UI, then select 'obj', and save to "xxxx.obj"
+*** Export the non-fused model
+**** Drag the fused model out of the green region at the bottom of the UI, and drag the non-fused models into the green region.
+**** Click the 'output' button at the top of the UI, then select 'obj', and save to "xxxx_raw.obj"
+*** Copy all these files to whatever machine you're running blender on.
+* Clean up the mesh in Blender
+** Load the fused .obj file
+*** Open Blender
+*** Get rid of the default cube it starts with by selecting it (right-click), and delete (fn-delete on apple keyboard, to differentiate from backspace).
+*** Select File->Import and load xxxx.obj file
+*** Press 'g' to switch to move mode, move mouse to move the object, right (left?) click to release.
+** Clean up the mesh
+*** This will automatically smooth and hole-fill the mesh.
+*** In the editing tools column on the right, click the wrench icon from the row of tiny icons near the middle. You should now see a pull-down menu saying 'add modifier'.
+*** Click 'add modifier', and select 'remesh'
+*** Change mode: Sharp to mode: Smooth
+*** In the 'Octree depth' editing box, click the tiny right-facing arrow to increase the octree depth, which increases resolution. Stop clicking when you're happy with the resolution.
+*** Click 'Apply' to commit to that smoothing operation.
+** Smooth any wrinkles
+*** Switch the UI view to default (select from the drop-down menu at the top, to the right of the 'Help' menu.
+*** At the bottom, change the interaction menu from 'Object Mode' to 'Sculpt Mode'
+*** On the left column, switch from a painting brush to a smoothing brush.
+*** Also on the left column, in the 'Dyntopo' menu, consider enabling dynamic topology, which decimates the mesh where you've smoothed it, for efficiency.
+*** Paint the smoothing tool around areas that need smoothing.
+* Infer the camera angles from the xxxx_raw.* files
+** In the directory containing xxxx_raw.* files, run
+*** find_cam xxxx_raw.obj 32
+**** Run from directory containing xxxx_raw.obj.
+**** (32 here is the total # of scans, i.e. the total # of xxxx_raw_N.jpg files)
+**** Look at the stdout output, check to see if any views didn't converge, write down their view numbers
+**** This generates a single .yaml file (it used to generate several numbered .yaml files) called xxxx_raw.obj.yaml
+**** Copy resultant .yaml file to jitter/modelfiles/xxxx/
+* Correct textures
+** In blender, switch to script view using the menu at the top to the right of the 'help' menu.
+** Load jittr/blender/create_textures.py into blender.
+** Save current blender setup as .blend file; this will save a custom copy of create_textures into the .blend.
+** If any of the camera views failed to converge, provide a material_set argument to the main() function at the end.
+*** This is a list of camera indices (ints) that converged. Just take range(N) (here, N=32) and remove the unconverged camera indices from it.
+** Click "Run script" button right below the script window. This should create a jittr/modelfiles/xxxx/unwrapped/ directory with unwrapped textures in it.
+* Apply corrected textures to simplified model
+** In top menubar, switch rendering pull-down menu (rightmost menu button) to "Cycles Render
+** In right column, click the circle with checkerboard pattern (materials box)
+** Select surface: Diffuse BSDF
+** Color: Image texture
+** Expand Color by clicking the + to its left, then:
+*** Select 'merged.png' as the texture file
+*** The following menubuttons should read: Color, Flat, Linear, Single Image
+** Vector: UV Map
+** Expand Vector by clicking the + to its left, then:
+*** Select UVNew from the menubutton
+* Export corrected .obj file
+** Make new directory, let's say "xxxx_corrected"
+** File->export->Wavefront obj -> xxxx_corrected/xxxx_corrected.obj
+** Copy jittr/modelfiles/xxxx/unwrapped/merged.png to xxxx_corrected/
+** Edit last line of xxxx_corrected/xxxx_corrected.mtl to point to the merged.png you copied over (no need to specify directory, since it's in the same dir)

@@ -34,6 +34,16 @@ def main():
                             help=("Output files will be O_images.npy and "
                                   "O_labels.npy."))
 
+        # parser.add_argument("-f",
+        #                     "--format",
+        #                     choices=('dat', 'npy'),
+        #                     help=("A .dat file is a raw memmap with no "
+        #                           "dtype or shape info. Compatible with "
+        #                           "pylearn2.new_norb. A .npy file has a "
+        #                           "header with dtype and shape info. "
+        #                           "This is more convenient in most other "
+        #                           "applications."))
+
         result = parser.parse_args()
 
         assert os.path.splitext(result.output_prefix)[1] == ""
@@ -45,15 +55,20 @@ def main():
     num_files = 3888
     image_shape = (96, 96, 4)
 
-    images = open_memmap('%s_images.npy' % args.output_prefix,
-                         dtype='uint8',
-                         mode='w+',
-                         shape=(num_files, ) + image_shape)
+    # new_memmap = numpy.memmap if args.format == 'dat' else open_memmap
+    new_memmap = open_memmap
 
-    labels = open_memmap('%s_labels.npy' % args.output_prefix,
-                         dtype='int32',
-                         mode='w+',
-                         shape=(num_files, 5))
+    images = new_memmap('%s_images.%s' % (args.output_prefix,
+                                          args.format),
+                        dtype='uint8',
+                        mode='w+',
+                        shape=(num_files, ) + image_shape)
+
+    labels = new_memmap('%s_labels.%s' % (args.output_prefix,
+                                          args.format),
+                        dtype='int32',
+                        mode='w+',
+                        shape=(num_files, 5))
 
     image_prefix = os.path.join(args.input_directory, args.image_prefix)
 

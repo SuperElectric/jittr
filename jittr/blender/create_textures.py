@@ -2,7 +2,7 @@ import bpy, bmesh, numpy, yaml
 import matplotlib.image as mpimg
 
 # set JITTR_DIR
-JITTR_DIR = "/home/daniel/urop/jittr"
+JITTR_DIR = "/home/mifs/mkg30/projects/urop_2014/jittr"
 
 def read_mtl(object):
     # returns list of (material, image) pairs
@@ -273,6 +273,7 @@ def main(object, render=True, blend_textures=True, material_set=[]):
 if __name__ == "__main__":
     object = bpy.context.active_object
     main(object, render=True, blend_textures=True)
+
 
 
 
