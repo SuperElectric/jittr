@@ -1,109 +1,198 @@
 #! /usr/bin/env python
 
+"""
+Script for generating image and label memmaps from .png renderings by blender.
+"""
+
+from __future__ import print_function
+
 import argparse
+import os
+import sys
+import re
 from matplotlib.image import imread
 import numpy
-import os.path
-import pdb
 from numpy.lib.format import open_memmap
+from nose.tools import assert_true, assert_equal, assert_greater
+from numpy.testing import assert_array_equal
 
 
 def main():
+    """ Entry point of script. """
+
     def parse_args():
+        """ Parse command-line args, return as namespace. """
+
         parser = argparse.ArgumentParser(
             description=("Merges .pngs into a memmappable .npy file, and "
                          " generates corrsponding NORB labels as another "
-                         ".npy file."))
+                         ".npy file. Expects all .pngs to be in one directory,"
+                         " and to be named as <prefix><number>.png"))
+
+
+        def existing_dir(arg):
+            assert_true(os.path.isdir(arg))
+            return arg
 
         parser.add_argument("-i",
-                            "--input_directory",
+                            "--input-dir",
+                            type=existing_dir,
                             required=True,
                             help="Directory containing the .png files.")
 
         parser.add_argument("-p",
-                            "--image_prefix",
+                            "--image-prefix",
                             default="a",
                             metavar="P",
                             help=("Images are assumed to have filenames "
                                   "of the form <P><N>.png, where P is this "
                                   "prefix, and N is the image number."))
         parser.add_argument("-o",
-                            "--output_prefix",
+                            "--output-dir",
                             required=True,
+                            type=existing_dir,
                             metavar="O",
-                            help=("Output files will be O_images.npy and "
-                                  "O_labels.npy."))
+                            help=("Will save images.npy and labels.npy to "
+                                  "this directory."))
 
-        # parser.add_argument("-f",
-        #                     "--format",
-        #                     choices=('dat', 'npy'),
-        #                     help=("A .dat file is a raw memmap with no "
-        #                           "dtype or shape info. Compatible with "
-        #                           "pylearn2.new_norb. A .npy file has a "
-        #                           "header with dtype and shape info. "
-        #                           "This is more convenient in most other "
-        #                           "applications."))
+        def positive_int(arg):
+            """ Parse a positive int arg. """
+
+            arg = int(arg)
+            assert_greater(arg, 0)
+            return arg
+
+        parser.add_argument("--num_lightings",
+                            type=positive_int,
+                            default=4,
+                            help="The number of lighting setups.")
 
         result = parser.parse_args()
-
-        assert os.path.splitext(result.output_prefix)[1] == ""
 
         return result
 
     args = parse_args()
 
-    num_files = 3888
-    image_shape = (96, 96, 4)
+    def get_png_files():
+        """
+        Returns filenames of images under args.input_directory.
 
-    # new_memmap = numpy.memmap if args.format == 'dat' else open_memmap
-    new_memmap = open_memmap
+        Filenames will be of the form <args.image_prefix><integer>.png.
 
-    images = new_memmap('%s_images.%s' % (args.output_prefix,
-                                          args.format),
-                        dtype='uint8',
-                        mode='w+',
-                        shape=(num_files, ) + image_shape)
+        Aborts if the integers aren't contiguous from 1 to num_images.
+        """
+        # regex for <prefix><number>.png
+        #
+        # r: raw string; don't interpret backslashes as escapes.
+        # ^: start of string
+        # \d+: 1 or more digits
+        # \Z: end of string
+        regex = re.compile(r"^{}\d+\.png\Z".format(args.image_prefix))
 
-    labels = new_memmap('%s_labels.%s' % (args.output_prefix,
-                                          args.format),
-                        dtype='int32',
-                        mode='w+',
-                        shape=(num_files, 5))
+        for _, _, filenames in os.walk(args.input_dir):
+            image_files = [f for f in filenames
+                           if regex.match(f) is not None]
+            assert_greater(len(image_files), 0)
 
-    image_prefix = os.path.join(args.input_directory, args.image_prefix)
+            image_files.sort()
+            digits = numpy.asarray([int(f[len(args.image_prefix):-4])
+                                    for f in image_files])
+            # digits.sort()
+            assert_array_equal(digits, numpy.arange(1, len(image_files) + 1))
 
-    def get_filename(image_prefix, file_number):
-        assert 1000 <= num_files
-        assert file_number <= num_files
+            return image_files
 
-        if (file_number < 10):
-            return "%s000%d.png" % (image_prefix, file_number)
-        elif (file_number < 100):
-            return "%s00%d.png" % (image_prefix, file_number)
-        elif (file_number < 1000):
-            return "%s0%d.png" % (image_prefix, file_number)
-        else:
-            return "%s%d.png" % (image_prefix, file_number)
+    png_files = get_png_files()
+    num_files = len(png_files)
+    num_azimuths = 18
+    num_elevations = 9
+    files_per_object = num_azimuths * num_elevations * args.num_lightings
 
-    def get_norb_label(file_number):
-        light = (file_number / 972)
-        model = (file_number / 162) % 6
-        elev = (file_number / 18) % 9
-        azim = (file_number % 18) * 2
+    num_objects = num_files // files_per_object
+    assert_equal(num_objects * files_per_object, num_files)
 
-        return numpy.asarray([0, model, elev, azim, light], dtype='int32')
+    # num_files = 3888
 
-    for file_number in range(num_files):
-        name = get_filename(image_prefix, file_number + 1)
-        if not os.path.exists(name):
-            print "File '%s' not found." % name
+    # def get_filename(image_prefix, file_number):
+    #     assert 1000 <= num_files
+    #     assert file_number <= num_files
 
-        image = imread(name)  # row, column, RGBA
-        images[file_number, ...] = numpy.round(image * 255)
-        if file_number % 1000 == 0:
-            print "read %d of %d" % (file_number + 1, num_files)
+    #     if (file_number < 10):
+    #         return "%s000%d.png" % (image_prefix, file_number)
+    #     elif (file_number < 100):
+    #         return "%s00%d.png" % (image_prefix, file_number)
+    #     elif (file_number < 1000):
+    #         return "%s0%d.png" % (image_prefix, file_number)
+    #     else:
+    #         return "%s%d.png" % (image_prefix, file_number)
 
-        labels[file_number, :] = get_norb_label(file_number)
+    def make_labels():
+        """ Create the labels memmap """
+
+        labels = open_memmap(os.path.join(args.output_dir, 'labels.npy'),
+                             dtype='int32',
+                             mode='w+',
+                             shape=(num_files, 5))
+
+        row_index = 0
+        for lighting in xrange(args.num_lightings):
+            for object_id in xrange(num_objects):
+                for elevation in xrange(num_elevations):
+                    for azimuth in xrange(0, num_azimuths * 2, 2):
+                        labels[row_index, :] = [0,
+                                                object_id,
+                                                elevation,
+                                                azimuth,
+                                                lighting]
+                        row_index += 1
+
+    make_labels()
+
+    def make_images():
+        """ Create the images memmap """
+
+        image_shape = (96, 96, 4)
+
+        images = open_memmap(os.path.join(args.output_dir, 'images.npy'),
+                             dtype='uint8',
+                             mode='w+',
+                             shape=(num_files, ) + image_shape)
+
+        for file_number, filename in enumerate(png_files):
+            filepath = os.path.join(args.input_dir, filename)
+            if not os.path.exists(filepath):
+                print("Couldn't find '{}'.".format(filepath))
+                sys.exit(1)
+
+            image = imread(filepath)  # row, column, channel (RGBA, float)
+            images[file_number, ...] = numpy.round(image * 255)
+            if file_number % 100 == 0:
+                print("read {} of {}".format(file_number + 1, num_files))
+
+        print("read {} of {}".format(num_files, num_files))
+
+    make_images()
+    print("wrote images.npy and labels.npy to {}".format(args.output_dir))
+
+    # def get_norb_label(file_number):
+    #     light = (file_number / 972)
+    #     model = (file_number / 162) % 6
+    #     elev = (file_number / 18) % 9
+    #     azim = (file_number % 18) * 2
+
+    #     return numpy.asarray([0, model, elev, azim, light], dtype='int32')
+
+    # for file_number in range(num_files):
+    #     name = get_filename(image_prefix, file_number + 1)
+    #     if not os.path.exists(name):
+    #         print "File '%s' not found." % name
+
+    #     image = imread(name)  # row, column, RGBA
+    #     images[file_number, ...] = numpy.round(image * 255)
+    #     if file_number % 1000 == 0:
+    #         print "read %d of %d" % (file_number + 1, num_files)
+
+    #     labels[file_number, :] = get_norb_label(file_number)
 
 
 if __name__ == '__main__':
